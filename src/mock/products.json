@@ -1,0 +1,83 @@
+[
+  {
+    "id": 1,
+    "categoryId": 15,
+    "name": "Đèn đội đầu",
+    "price": 111500,
+    "originalPrice": 121500,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/%C4%90%C3%A8n_%C4%91%E1%BB%99i_%C4%91%E1%BA%A7u_ioxnsu.jpg",
+    "detail": "Đèn đội đầu E6078, ánh sáng trắng, thời gian sạc 4-6 giờ,thời gian chiếu sáng 3-6 giờ(tùy chế độ)"
+  },
+  {
+    "id": 2,
+    "categoryId": 16,
+    "name": "Găng tay phủ PU đầu ngón",
+    "price": 5000,
+    "originalPrice": 15000,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/G%C4%83ng_tay_ph%E1%BB%A7_PU_m89ydy.jpg",
+    "detail": "Găng tay phủ nhựa PU màu trắng là dòng găng tay bảo hộ chuyên dụng được thiết kế để tăng độ bám, chống trơn trượt và bảo vệ bàn tay trong quá trình làm việc. Sản phẩm phù hợp cho ngành điện tử, cơ khí chính xác, kho vận, lắp ráp linh kiện và nhiều lĩnh vực khác."
+  },
+  {
+    "id": 3,
+    "categoryId": 6,
+    "name": "Kéo cắt",
+    "price": 60000,
+    "originalPrice": 65000,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/K%C3%A9o_c%E1%BA%AFt_lpoh4b.jpg",
+    "detail": "Kéo cắt công nghiệp BIAO HAN được thiết kế chuyên dụng cho các công việc cắt vật liệu trong ngành may mặc, đóng gói, thủ công mỹ nghệ và sản xuất công nghiệp. Với lưỡi kéo sắc bén và kết cấu chắc chắn, sản phẩm mang lại hiệu quả cắt vượt trội và độ bền lâu dài."
+  },
+  {
+    "id": 4,
+    "categoryId": 12,
+    "name": "Lưỡi cắt Oasis",
+    "price": 5000,
+    "originalPrice": 15000,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/L%C6%B0%E1%BB%A1i_c%E1%BA%AFt_lojmgh.jpg",
+    "detail": "-Kích thước: 107 x 1.2 x 16mm, chuyên cắt các kim loại, vật cứng, bền bỉ chất lượng"
+  },
+  {
+    "id": 5,
+    "categoryId": 15,
+    "name": "Ổ cắm chuyển đổi đa năng",
+    "price": 22000,
+    "originalPrice": 25000,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556125/%E1%BB%95_c%E1%BA%AFm_chuy%E1%BB%83n_%C4%91%E1%BB%95i_%C4%91a_n%C4%83ng_fnog6v.jpg",
+    "detail": "Ổ cắm chuyển đổi TP là giải pháp tiện ích giúp kết nối các thiết bị điện có chuẩn phích cắm khác nhau một cách nhanh chóng và an toàn. Thiết kế nhỏ gọn, dễ mang theo, phù hợp cho gia đình, văn phòng và du lịch."
+  },
+  {
+    "id": 6,
+    "categoryId": 15,
+    "name": "Phích cắm cái",
+    "price": 15000,
+    "originalPrice": 25000,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556125/Ph%C3%ADch_c%E1%BA%AFm_c%C3%A1i_ojmbf6.jpg",
+    "detail": "Phích cắm cái TP DCC/01 là phụ kiện điện dân dụng và công nghiệp được thiết kế để nối dây nguồn nhanh chóng, an toàn và thuận tiện. Với chất liệu nhựa chống cháy cùng tiếp điểm đồng dẫn điện tốt, sản phẩm đáp ứng nhu cầu sử dụng cho nhiều thiết bị điện khác nhau."
+  },
+  {
+    "id": 7,
+    "categoryId": 15,
+    "name": "Kéo cắt dây điện đa năng",
+    "price": 156000,
+    "originalPrice": 160000,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/K%C3%A9o_c%E1%BA%AFt_d%C3%A2y_%C4%91i%E1%BB%87n_%C4%91a_n%C4%83ng_j3u7ms.jpg",
+    "detail": "Kìm đa năng BIAO HAN là dụng cụ chuyên dụng được thiết kế để cắt dây điện và tuốt vỏ dây trên cùng một sản phẩm, giúp tiết kiệm thời gian và nâng cao hiệu quả làm việc. Phù hợp cho thợ điện, kỹ thuật viên, công việc sửa chữa dân dụng và công nghiệp."
+  },
+  {
+    "id": 8,
+    "categoryId": 12,
+    "name": "Nhám xếp Oasis",
+    "price": 10500,
+    "originalPrice": 15500,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556125/Nh%C3%A1m_x%E1%BA%BFp_oasis_kgmwpb.jpg",
+    "detail": "-Độ nhám (Grit): 60-80 (mức độ trung bình, phù hợp cho việc mài nhẵn và đánh bóng nhẹ).-Kích thước:100mm x 16mm (Đường kính ngoài 100mm, lỗ trục 16mm)."
+  },
+  {
+    "id": 9,
+    "categoryId": 18,
+    "name": "Decal in nhiệt",
+    "price": 36000,
+    "originalPrice": 40000,
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556123/decal_in_nhi%E1%BB%87t_i45z6d.jpg",
+    "detail": "Decal in nhiệt 50×70mm là loại tem nhãn được sử dụng phổ biến cho máy in mã vạch, máy in đơn hàng, phù hợp cho Shopee, TikTok Shop, Lazada, kho vận, siêu thị và sản xuất."
+  }
+]

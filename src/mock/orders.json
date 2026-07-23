@@ -1,0 +1,274 @@
+[
+  {
+    "id": 1,
+    "status": "pending",
+    "paymentStatus": "pending",
+    "createdAt": "2023-10-01T10:00:00Z",
+    "receivedAt": "2023-10-05T10:00:00Z",
+    "items": [
+      {
+        "product": {
+          "id": 1,
+          "name": "Đèn đội đầu",
+          "price": 111500,
+          "originalPrice": 111500,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/%C4%90%C3%A8n_%C4%91%E1%BB%99i_%C4%91%E1%BA%A7u_ioxnsu.jpg",
+          "category": {
+            "id": 15,
+            "name": "Vật tư thợ điện",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555526/V%E1%BA%ADt_t%C6%B0_th%E1%BB%A3_%C4%91i%E1%BB%87n_ivi7uz.png"
+          },
+          "detail": "- Đèn đội đầu E6078, ánh sáng trắng, thời gian sạc 4-6 giờ,thời gian chiếu sáng 3-6 giờ(tùy chế độ)"
+        },
+        "quantity": 3
+      },
+      {
+        "product": {
+          "id": 2,
+          "name": "Găng tay phủ PU đầu ngón",
+          "price": 5000,
+          "originalPrice": 5000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/G%C4%83ng_tay_ph%E1%BB%A7_PU_m89ydy.jpg",
+          "category": {
+            "id": 16,
+            "name": "Bảo hộ lao động",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555456/B%E1%BA%A3o_h%E1%BB%99_lao_%C4%91%E1%BB%99ng_snj0pq.png"
+          },
+          "detail": "Găng tay phủ nhựa PU màu trắng là dòng găng tay bảo hộ chuyên dụng được thiết kế để tăng độ bám, chống trơn trượt và bảo vệ bàn tay trong quá trình làm việc. Sản phẩm phù hợp cho ngành điện tử, cơ khí chính xác, kho vận, lắp ráp linh kiện và nhiều lĩnh vực khác."
+        },
+        "quantity": 2
+      },
+      {
+        "product": {
+          "id": 3,
+          "name": "Kéo cắt",
+          "price": 60000,
+          "originalPrice": 60000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/K%C3%A9o_c%E1%BA%AFt_lpoh4b.jpg",
+          "category": {
+            "id": 6,
+            "name": "Dụng cụ dao,kéo các loại",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555497/D%E1%BB%A5ng_c%E1%BB%A5_dao_k%C3%A9o_c%C3%A1c_lo%E1%BA%A1i_pdhq28.png"
+          },
+          "detail": "Kéo cắt công nghiệp BIAO HAN được thiết kế chuyên dụng cho các công việc cắt vật liệu trong ngành may mặc, đóng gói, thủ công mỹ nghệ và sản xuất công nghiệp. Với lưỡi kéo sắc bén và kết cấu chắc chắn, sản phẩm mang lại hiệu quả cắt vượt trội và độ bền lâu dài."
+        },
+        "quantity": 1
+      }
+    ],
+    "delivery": {
+      "type": "shipping",
+      "alias": "Home",
+      "address": "123 Main St, City, Country",
+      "name": "John Doe",
+      "phone": "123456789"
+    },
+    "total": 404500,
+    "note": "Lựa giúp mình hàng hóa chất lượng nhé, mình cảm ơn shop"
+  },
+  {
+    "id": 2,
+    "status": "completed",
+    "paymentStatus": "success",
+    "createdAt": "2023-09-20T08:30:00Z",
+    "receivedAt": "2023-09-25T08:30:00Z",
+    "items": [
+      {
+        "product": {
+          "id": 2,
+          "name": "Găng tay phủ PU đầu ngón",
+          "price": 5000,
+          "originalPrice": 5000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/G%C4%83ng_tay_ph%E1%BB%A7_PU_m89ydy.jpg",
+          "category": {
+            "id": 16,
+            "name": "Bảo hộ lao động",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555456/B%E1%BA%A3o_h%E1%BB%99_lao_%C4%91%E1%BB%99ng_snj0pq.png"
+          },
+          "detail": "Găng tay phủ nhựa PU màu trắng là dòng găng tay bảo hộ chuyên dụng được thiết kế để tăng độ bám, chống trơn trượt và bảo vệ bàn tay trong quá trình làm việc. Sản phẩm phù hợp cho ngành điện tử, cơ khí chính xác, kho vận, lắp ráp linh kiện và nhiều lĩnh vực khác."
+        },
+        "quantity": 1
+      },
+      {
+        "product": {
+          "id": 3,
+          "name": "Kéo cắt",
+          "price": 60000,
+          "originalPrice": 60000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/K%C3%A9o_c%E1%BA%AFt_lpoh4b.jpg",
+          "category": {
+            "id": 6,
+            "name": "Dụng cụ dao,kéo các loại",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555497/D%E1%BB%A5ng_c%E1%BB%A5_dao_k%C3%A9o_c%C3%A1c_lo%E1%BA%A1i_pdhq28.png"
+          },
+          "detail": "Kéo cắt công nghiệp BIAO HAN được thiết kế chuyên dụng cho các công việc cắt vật liệu trong ngành may mặc, đóng gói, thủ công mỹ nghệ và sản xuất công nghiệp. Với lưỡi kéo sắc bén và kết cấu chắc chắn, sản phẩm mang lại hiệu quả cắt vượt trội và độ bền lâu dài."
+        },
+        "quantity": 3
+      },
+      {
+        "product": {
+          "id": 4,
+          "name": "Lưỡi cắt Oasis",
+          "price": 5000,
+          "originalPrice": 5000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/L%C6%B0%E1%BB%A1i_c%E1%BA%AFt_lojmgh.jpg",
+          "category": {
+            "id": 12,
+            "name": "Lưỡi cắt-nhám xếp các loại",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555515/L%C6%B0%E1%BB%A1i_c%E1%BA%AFt-_nh%C3%A1m_x%E1%BA%BFp_uufjmp.png"
+          },
+          "detail": "-Kích thước: 107 x 1.2 x 16mm, chuyên cắt các kim loại, vật cứng, bền bỉ chất lượng"
+        },
+        "quantity": 2
+      }
+    ],
+    "delivery": {
+      "type": "pickup",
+      "id": 1,
+      "name": "Ngũ Kim Trung Kim",
+      "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/ChatGPT_Image_2026%E5%B9%B46%E6%9C%889%E6%97%A5_16_25_11_rkdpxw.png",
+      "address": "Thửa đất số 2498, tờ bản đồ số 5, Ấp Bình Tả 1, xã Đức Hòa, tỉnh Tây Ninh",
+      "location": {
+        "lat": 10.768746,
+        "lng": 106.728228
+      }
+    },
+    "total": 195000,
+    "note": "Lựa giúp mình hàng hóa chất lượng nhé, mình cảm ơn shop"
+  },
+  {
+    "id": 3,
+    "status": "shipping",
+    "paymentStatus": "success",
+    "createdAt": "2023-10-10T12:00:00Z",
+    "receivedAt": "2023-10-15T12:00:00Z",
+    "items": [
+      {
+        "product": {
+          "id": 4,
+          "name": "Lưỡi cắt Oasis",
+          "price": 5000,
+          "originalPrice": 5000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/L%C6%B0%E1%BB%A1i_c%E1%BA%AFt_lojmgh.jpg",
+          "category": {
+            "id": 12,
+            "name": "Lưỡi cắt-nhám xếp các loại",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555515/L%C6%B0%E1%BB%A1i_c%E1%BA%AFt-_nh%C3%A1m_x%E1%BA%BFp_uufjmp.png"
+          },
+          "detail": "-Kích thước: 107 x 1.2 x 16mm, chuyên cắt các kim loại, vật cứng, bền bỉ chất lượng"
+        },
+        "quantity": 3
+      },
+      {
+        "product": {
+          "id": 5,
+          "name": "Ổ cắm chuyển đổi đa năng",
+          "price": 22000,
+          "originalPrice": 22000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556125/%E1%BB%95_c%E1%BA%AFm_chuy%E1%BB%83n_%C4%91%E1%BB%95i_%C4%91a_n%C4%83ng_fnog6v.jpg",
+          "category": {
+            "id": 15,
+            "name": "Vật tư thợ điện",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555526/V%E1%BA%ADt_t%C6%B0_th%E1%BB%A3_%C4%91i%E1%BB%87n_ivi7uz.png"
+          },
+          "detail": "Ổ cắm chuyển đổi TP là giải pháp tiện ích giúp kết nối các thiết bị điện có chuẩn phích cắm khác nhau một cách nhanh chóng và an toàn. Thiết kế nhỏ gọn, dễ mang theo, phù hợp cho gia đình, văn phòng và du lịch."
+        },
+        "quantity": 1
+      },
+      {
+        "product": {
+          "id": 6,
+          "name": "Phích cắm cái",
+          "price": 15000,
+          "originalPrice": 15000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556125/Ph%C3%ADch_c%E1%BA%AFm_c%C3%A1i_ojmbf6.jpg",
+          "category": {
+            "id": 15,
+            "name": "Vật tư thợ điện",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555526/V%E1%BA%ADt_t%C6%B0_th%E1%BB%A3_%C4%91i%E1%BB%87n_ivi7uz.png"
+          },
+          "detail": "Phích cắm cái TP DCC/01 là phụ kiện điện dân dụng và công nghiệp được thiết kế để nối dây nguồn nhanh chóng, an toàn và thuận tiện. Với chất liệu nhựa chống cháy cùng tiếp điểm đồng dẫn điện tốt, sản phẩm đáp ứng nhu cầu sử dụng cho nhiều thiết bị điện khác nhau."
+        },
+        "quantity": 2
+      }
+    ],
+    "delivery": {
+      "type": "shipping",
+      "alias": "Office",
+      "address": "789 Office St, City, Country",
+      "name": "Jane Smith",
+      "phone": "987654321"
+    },
+    "total": 67000,
+    "note": "Lựa giúp mình hàng hóa chất lượng nhé, mình cảm ơn shop"
+  },
+  {
+    "id": 4,
+    "status": "completed",
+    "paymentStatus": "failed",
+    "createdAt": "2023-09-15T09:00:00Z",
+    "receivedAt": "2023-09-20T09:00:00Z",
+    "items": [
+      {
+        "product": {
+          "id": 5,
+          "name": "Ổ cắm chuyển đổi đa năng",
+          "price": 22000,
+          "originalPrice": 22000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556125/%E1%BB%95_c%E1%BA%AFm_chuy%E1%BB%83n_%C4%91%E1%BB%95i_%C4%91a_n%C4%83ng_fnog6v.jpg",
+          "category": {
+            "id": 15,
+            "name": "Vật tư thợ điện",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555526/V%E1%BA%ADt_t%C6%B0_th%E1%BB%A3_%C4%91i%E1%BB%87n_ivi7uz.png"
+          },
+          "detail": "Ổ cắm chuyển đổi TP là giải pháp tiện ích giúp kết nối các thiết bị điện có chuẩn phích cắm khác nhau một cách nhanh chóng và an toàn. Thiết kế nhỏ gọn, dễ mang theo, phù hợp cho gia đình, văn phòng và du lịch."
+        },
+        "quantity": 1
+      },
+      {
+        "product": {
+          "id": 6,
+          "name": "Phích cắm cái",
+          "price": 15000,
+          "originalPrice": 15000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556125/Ph%C3%ADch_c%E1%BA%AFm_c%C3%A1i_ojmbf6.jpg",
+          "category": {
+            "id": 15,
+            "name": "Vật tư thợ điện",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555526/V%E1%BA%ADt_t%C6%B0_th%E1%BB%A3_%C4%91i%E1%BB%87n_ivi7uz.png"
+          },
+          "detail": "Phích cắm cái TP DCC/01 là phụ kiện điện dân dụng và công nghiệp được thiết kế để nối dây nguồn nhanh chóng, an toàn và thuận tiện. Với chất liệu nhựa chống cháy cùng tiếp điểm đồng dẫn điện tốt, sản phẩm đáp ứng nhu cầu sử dụng cho nhiều thiết bị điện khác nhau."
+        },
+        "quantity": 3
+      },
+      {
+        "product": {
+          "id": 7,
+          "name": "Kéo cắt dây điện đa năng",
+          "price": 156000,
+          "originalPrice": 156000,
+          "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/K%C3%A9o_c%E1%BA%AFt_d%C3%A2y_%C4%91i%E1%BB%87n_%C4%91a_n%C4%83ng_j3u7ms.jpg",
+          "category": {
+            "id": 15,
+            "name": "Vật tư thợ điện",
+            "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555526/V%E1%BA%ADt_t%C6%B0_th%E1%BB%A3_%C4%91i%E1%BB%87n_ivi7uz.png"
+          },
+          "detail": "Kìm đa năng BIAO HAN là dụng cụ chuyên dụng được thiết kế để cắt dây điện và tuốt vỏ dây trên cùng một sản phẩm, giúp tiết kiệm thời gian và nâng cao hiệu quả làm việc. Phù hợp cho thợ điện, kỹ thuật viên, công việc sửa chữa dân dụng và công nghiệp."
+        },
+        "quantity": 1
+      }
+    ],
+    "delivery": {
+      "type": "pickup",
+      "id": 1,
+      "name": "Ngũ Kim Trung Kim",
+      "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/ChatGPT_Image_2026%E5%B9%B46%E6%9C%889%E6%97%A5_16_25_11_rkdpxw.png",
+      "address": "Thửa đất số 2498, tờ bản đồ số 5, Ấp Bình Tả 1, xã Đức Hòa, tỉnh Tây Ninh",
+      "location": {
+        "lat": 10.768746,
+        "lng": 106.728228
+      }
+    },
+    "total": 223000,
+    "note": "Lựa giúp mình hàng hóa chất lượng nhé, mình cảm ơn shop"
+  }
+]

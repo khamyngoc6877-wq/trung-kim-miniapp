@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "Ngũ Kim Trung Kim",
+    "textColor": "white",
+    "headerColor": "#ffffff",
+    "statusBar": "transparent",
+    "actionBarHidden": true,
+    "hideAndroidBottomNavigationBar": false,
+    "hideIOSSafeAreaBottom": true,
+    "selfControlLoading": false
+  },
+  "listCSS": [],
+  "listSyncJS": [],
+  "listAsyncJS": [],
+  "template": {
+    "name": "Ngũ Kim Trung Kim",
+    "apiUrl": "",
+    "oaIDtoOpenChat": "178452001273914102",
+    "logoUrl": "https://photo-logo-mapps.zadn.vn/184079cdd98830d66999.jpg",
+    "shopName": "Ngũ kim Trung Kim",
+    "shopAddress": "Thửa đất số 2498, tờ bản đồ số 5, Ấp Bình Tả 1, xã Đức Hòa, tỉnh Tây Ninh"
+  }
+}

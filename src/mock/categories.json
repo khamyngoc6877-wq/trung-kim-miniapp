@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "name": "Bộ dụng cụ",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555468/B%E1%BB%99_d%E1%BB%A5ng_c%E1%BB%A5_c%C3%A1c_lo%E1%BA%A1i_tpwllx.png"
+  },
+  {
+    "id": 2,
+    "name": "Búa, cuốc,cưa các loại",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555476/B%C3%BAa_cu%E1%BB%91c_c%C6%B0a_c%C3%A1c_lo%E1%BA%A1i_wxmun4.png"
+  },
+  {
+    "id": 3,
+    "name": "Cờ lê các loại",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555485/C%E1%BB%9D_l%C3%AA_c%C3%A1c_lo%E1%BA%A1i_kmiczw.png"
+  },
+  {
+    "id": 4,
+    "name": "Đầu tuýp các loại",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555494/%C4%90%E1%BA%A7u_tu%C3%BDp_c%C3%A1c_lo%E1%BA%A1i_yjth9n.png"
+  },
+  {
+    "id": 5,
+    "name": "Dụng cụ cầm tay điện",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555494/D%E1%BB%A5ng_c%E1%BB%A5_c%E1%BA%A7m_tay_%C4%91i%E1%BB%87n_u1blq4.png"
+  },
+  {
+    "id": 6,
+    "name": "Dụng cụ dao,kéo các loại",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555497/D%E1%BB%A5ng_c%E1%BB%A5_dao_k%C3%A9o_c%C3%A1c_lo%E1%BA%A1i_pdhq28.png"
+  },
+  {
+    "id": 7,
+    "name": "Dụng cụ đo lường",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555489/D%E1%BB%A5ng_c%E1%BB%A5_%C4%91o_l%C6%B0%E1%BB%9Dng_m0rwwu.png"
+  },
+  {
+    "id": 8,
+    "name": "Dụng cụ hàn các loại",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555512/D%E1%BB%A5ng_c%E1%BB%A5_h%C3%A0n_c%C3%A1c_lo%E1%BA%A1i_m5f2ez.png"
+  },
+  {
+    "id": 9,
+    "name": "Dụng cụ khí nén",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555511/D%E1%BB%A5ng_c%E1%BB%A5_kh%C3%AD_n%C3%A9n_deqvfd.png"
+  },
+  {
+    "id": 10,
+    "name": "Dụng cụ thủy lực",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784555514/D%E1%BB%A5ng_c%E1%BB%A5_th%E1%BB%A7y_l%E1%BB%B1c_hbhutt.png"
+  },
+  {
+    "id": 11,
+    "name": "Kìm các loại",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555513/K%C3%ACm_c%C3%A1c_lo%E1%BA%A1i_c8x8bz.png"
+  },
+  {
+    "id": 12,
+    "name": "Lưỡi cắt-nhám xếp các loại",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555515/L%C6%B0%E1%BB%A1i_c%E1%BA%AFt-_nh%C3%A1m_x%E1%BA%BFp_uufjmp.png"
+  },
+  {
+    "id": 13,
+    "name": "Mũi khoan các loại",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555513/M%C5%A9i_khoan_c%C3%A1c_lo%E1%BA%A1i_vnw1sm.png"
+  },
+  {
+    "id": 14,
+    "name": "Tua vít& đầu vít các loại",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555515/Tua_v%C3%ADt_%C4%91%E1%BA%A7u_v%C3%ADt_c%C3%A1c_lo%E1%BA%A1i_k3ho5u.png"
+  },
+  {
+    "id": 15,
+    "name": "Vật tư thợ điện",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555526/V%E1%BA%ADt_t%C6%B0_th%E1%BB%A3_%C4%91i%E1%BB%87n_ivi7uz.png"
+  },
+   {
+    "id": 16,
+    "name": "Bảo hộ lao động",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555456/B%E1%BA%A3o_h%E1%BB%99_lao_%C4%91%E1%BB%99ng_snj0pq.png"
+  },
+   {
+    "id": 17,
+    "name": "Dụng cụ-phụ kiện CNC",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555512/D%E1%BB%A5ng_c%E1%BB%A5_ph%E1%BB%A5_ki%E1%BB%87n_CNC_ome1ko.png"
+  },
+  {
+    "id": 18,
+    "name": "Văn phòng phẩm",
+    "image":"https://res.cloudinary.com/cb1zubzy/image/upload/v1784555525/V%C4%83n_ph%C3%B2ng_ph%E1%BA%A9m_zsyj6s.png"
+  }
+]

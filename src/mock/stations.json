@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "name": "Ngũ Kim Trung Kim",
+    "image": "https://res.cloudinary.com/cb1zubzy/image/upload/v1784556124/ChatGPT_Image_2026%E5%B9%B46%E6%9C%889%E6%97%A5_16_25_11_rkdpxw.png",
+    "address": "Thửa đất số 2498, tờ bản đồ số 5, Ấp Bình Tả 1, xã Đức Hòa, tỉnh Tây Ninh",
+    "location": {
+      "lat": 10.768746,
+      "lng": 106.728228
+    }
+  }
+]
