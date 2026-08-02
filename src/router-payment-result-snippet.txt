@@ -1,0 +1,15 @@
+Trong src/router.tsx:
+
+1) Thêm import:
+import PaymentResultPage from "./pages/payment-result";
+
+2) Thêm route vào children của Layout:
+{
+  path: "/payment-result",
+  element: <PaymentResultPage />,
+  handle: {
+    title: "Kết quả thanh toán",
+    noFooter: true,
+    noFloatingCart: true,
+  },
+},

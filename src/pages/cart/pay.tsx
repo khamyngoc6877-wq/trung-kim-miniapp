@@ -18,6 +18,9 @@ import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Button, Radio, Sheet } from "zmp-ui";
 
+const ZALOPAY_ENABLED =
+  String(import.meta.env.VITE_ENABLE_ZALOPAY ?? "false") === "true";
+
 export default function Pay() {
   const cart = useAtomValue(cartState);
   const { totalAmount: subtotal } = useAtomValue(cartTotalState);
@@ -189,13 +192,20 @@ export default function Pay() {
                     <div className="text-xs text-subtitle">COD</div>
                   </div>
                 </label>
-                <label className="flex items-center gap-3 rounded-lg border p-4">
-                  <Radio value="zalopay" />
-                  <div>
-                    <div className="font-medium">Thanh toán qua ZaloPay</div>
-                    <div className="text-xs text-subtitle">Thanh toán trực tuyến</div>
+                {ZALOPAY_ENABLED ? (
+                  <label className="flex items-center gap-3 rounded-lg border p-4">
+                    <Radio value="zalopay" />
+                    <div>
+                      <div className="font-medium">Thanh toán qua ZaloPay</div>
+                      <div className="text-xs text-subtitle">Thanh toán trực tuyến</div>
+                    </div>
+                  </label>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-4 text-sm text-subtitle">
+                    ZaloPay đang tạm ẩn. Bật VITE_ENABLE_ZALOPAY=true sau khi đã cấu hình
+                    ZaloPay Merchant Sandbox trong trang quản lý Mini App.
                   </div>
-                </label>
+                )}
               </div>
             </Radio.Group>
           </div>

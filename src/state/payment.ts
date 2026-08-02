@@ -1,6 +1,4 @@
 import { atom } from "jotai";
+import type { PaymentMethod } from "@/types/payment";
 
-export type PaymentMethod = "COD" | "ZALOPAY";
-
-export const paymentMethodState =
-  atom<PaymentMethod>("COD");
+export const paymentMethodState = atom<PaymentMethod>("cash");

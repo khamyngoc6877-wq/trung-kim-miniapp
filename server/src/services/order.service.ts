@@ -1,13 +1,15 @@
-import fs from "node:fs/promises";
+import { promises as fs } from "node:fs";
 import path from "node:path";
 
 export type PaymentMethod = "cash" | "zalopay";
-export type PaymentStatus = "pending" | "paid" | "failed";
+export type PaymentStatus = "pending" | "paid" | "failed" | "cod_confirmed";
+export type ShippingMethod = "delivery" | "pickup";
+export type ShippingArea = "hcm" | "other";
 
 export type OrderItem = {
   id: string;
-  name?: string;
-  quantity?: number;
+  name: string;
+  quantity: number;
   amount: number;
 };
 
@@ -17,104 +19,85 @@ export type StoreOrder = {
   subtotal: number;
   shippingFee: number;
   totalAmount: number;
-  shippingMethod: "delivery" | "pickup";
-  shippingArea?: "hcm" | "other";
+  shippingMethod: ShippingMethod;
+  shippingArea?: ShippingArea;
   shippingAddress?: unknown;
   items: OrderItem[];
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   checkoutOrderId?: string;
   paymentTransactionId?: string;
-  paymentProviderMethod?: string;
+  providerMethod?: string;
   paymentMessage?: string;
   createdAt: string;
   updatedAt: string;
 };
 
 type OrderDb = Record<string, StoreOrder>;
-
-const storeFile = path.resolve(
-  process.env.ORDER_STORE_FILE ?? "./data/orders.json",
-);
-
-let writeQueue: Promise<void> = Promise.resolve();
+const filePath = path.resolve(process.env.ORDER_STORE_FILE || "./data/orders.json");
+let queue: Promise<unknown> = Promise.resolve();
 
 async function readDb(): Promise<OrderDb> {
   try {
-    return JSON.parse(await fs.readFile(storeFile, "utf8")) as OrderDb;
+    return JSON.parse(await fs.readFile(filePath, "utf8")) as OrderDb;
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") return {};
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
     throw error;
   }
 }
 
 async function writeDb(db: OrderDb): Promise<void> {
-  writeQueue = writeQueue.then(async () => {
-    await fs.mkdir(path.dirname(storeFile), { recursive: true });
-    const temp = `${storeFile}.tmp`;
-    await fs.writeFile(temp, JSON.stringify(db, null, 2), "utf8");
-    await fs.rename(temp, storeFile);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const temp = `${filePath}.tmp`;
+  await fs.writeFile(temp, JSON.stringify(db, null, 2), "utf8");
+  await fs.rename(temp, filePath);
+}
+
+function mutate<T>(fn: (db: OrderDb) => Promise<T> | T): Promise<T> {
+  const next = queue.then(async () => {
+    const db = await readDb();
+    const result = await fn(db);
+    await writeDb(db);
+    return result;
   });
-  return writeQueue;
+  queue = next.catch(() => undefined);
+  return next;
 }
 
 export async function saveOrder(order: StoreOrder): Promise<void> {
-  const db = await readDb();
-  db[order.id] = order;
-  await writeDb(db);
+  await mutate((db) => { db[order.id] = order; });
 }
 
 export async function findOrderById(id: string): Promise<StoreOrder | null> {
-  const db = await readDb();
-  return db[id] ?? null;
+  return (await readDb())[id] ?? null;
 }
 
-export async function findOrderByCheckoutOrderId(
-  checkoutOrderId: string,
-): Promise<StoreOrder | null> {
-  const db = await readDb();
-  return Object.values(db).find((o) => o.checkoutOrderId === checkoutOrderId) ?? null;
+export async function bindCheckoutOrder(merchantOrderId: string, checkoutOrderId: string): Promise<void> {
+  await mutate((db) => {
+    const order = db[merchantOrderId];
+    if (!order) throw new Error("Không tìm thấy đơn hàng");
+    order.checkoutOrderId = checkoutOrderId;
+    order.updatedAt = new Date().toISOString();
+  });
 }
 
-export async function findOrderByTransactionId(
-  transId: string,
-): Promise<StoreOrder | null> {
-  const db = await readDb();
-  return Object.values(db).find((o) => o.paymentTransactionId === transId) ?? null;
+export async function findOrderByCheckoutOrderId(id: string): Promise<StoreOrder | null> {
+  return Object.values(await readDb()).find((order) => order.checkoutOrderId === id) ?? null;
 }
 
-export async function bindCheckoutOrder(
-  merchantOrderId: string,
-  checkoutOrderId: string,
-): Promise<StoreOrder> {
-  const db = await readDb();
-  const order = db[merchantOrderId];
-  if (!order) throw new Error("Không tìm thấy đơn hàng nội bộ");
-
-  order.checkoutOrderId = checkoutOrderId;
-  order.updatedAt = new Date().toISOString();
-  db[merchantOrderId] = order;
-  await writeDb(db);
-  return order;
+export async function findOrderByTransactionId(id: string): Promise<StoreOrder | null> {
+  return Object.values(await readDb()).find((order) => order.paymentTransactionId === id) ?? null;
 }
 
-export async function updateCodNotify(input: {
-  checkoutOrderId: string;
-  providerMethod: string;
-}): Promise<StoreOrder | null> {
-  const db = await readDb();
-  const order = Object.values(db).find(
-    (item) => item.checkoutOrderId === input.checkoutOrderId,
-  );
-  if (!order) return null;
-
-  order.paymentStatus = "pending";
-  order.paymentProviderMethod = input.providerMethod;
-  order.updatedAt = new Date().toISOString();
-  db[order.id] = order;
-  await writeDb(db);
-  return order;
+export async function updateCodNotify(input: { checkoutOrderId: string; providerMethod: string }): Promise<StoreOrder | null> {
+  return mutate((db) => {
+    const order = Object.values(db).find((entry) => entry.checkoutOrderId === input.checkoutOrderId);
+    if (!order) return null;
+    order.paymentStatus = "cod_confirmed";
+    order.providerMethod = input.providerMethod;
+    order.updatedAt = new Date().toISOString();
+    return order;
+  });
 }
 
 export async function updateOnlinePayment(input: {
@@ -124,18 +107,15 @@ export async function updateOnlinePayment(input: {
   providerMethod?: string;
   message?: string;
   success: boolean;
-}): Promise<StoreOrder> {
-  const db = await readDb();
-  const order = db[input.merchantOrderId];
-  if (!order) throw new Error("Không tìm thấy đơn hàng nội bộ");
-
-  order.checkoutOrderId = input.checkoutOrderId;
-  order.paymentTransactionId = input.transId;
-  order.paymentProviderMethod = input.providerMethod;
-  order.paymentMessage = input.message;
-  order.paymentStatus = input.success ? "paid" : "failed";
-  order.updatedAt = new Date().toISOString();
-  db[order.id] = order;
-  await writeDb(db);
-  return order;
+}): Promise<void> {
+  await mutate((db) => {
+    const order = db[input.merchantOrderId];
+    if (!order) throw new Error("Không tìm thấy đơn hàng");
+    order.checkoutOrderId = input.checkoutOrderId;
+    order.paymentTransactionId = input.transId;
+    order.providerMethod = input.providerMethod;
+    order.paymentMessage = input.message;
+    order.paymentStatus = input.success ? "paid" : "failed";
+    order.updatedAt = new Date().toISOString();
+  });
 }

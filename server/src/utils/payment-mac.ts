@@ -1,57 +1,66 @@
 import crypto from "node:crypto";
 
-export type MacValue = string | number | boolean | null | undefined;
-export type MacObject = Record<string, MacValue>;
+export type CreateOrderMacInput = {
+  amount: number;
+  desc: string;
+  item: unknown[];
+  extradata: string;
+  method: string;
+};
 
-function hmacSha256(privateKey: string, content: string): string {
-  return crypto
-    .createHmac("sha256", privateKey)
-    .update(content, "utf8")
-    .digest("hex");
+function hmacSha256(privateKey: string, value: string): string {
+  return crypto.createHmac("sha256", privateKey).update(value, "utf8").digest("hex");
 }
 
-export function buildSortedMacData(data: MacObject): string {
-  return Object.keys(data)
-    .sort()
-    .map((key) => `${key}=${data[key] ?? ""}`)
-    .join("&");
-}
-
-export function createOrderMac(data: MacObject, privateKey: string): string {
-  return hmacSha256(privateKey, buildSortedMacData(data));
-}
-
-function safeEqualHex(expected: string, received: string): boolean {
-  if (!/^[a-f0-9]+$/i.test(expected) || !/^[a-f0-9]+$/i.test(received)) {
-    return false;
-  }
-
+function timingSafeHexEqual(expected: string, received: string): boolean {
+  if (!/^[0-9a-f]+$/i.test(expected) || !/^[0-9a-f]+$/i.test(received)) return false;
   const a = Buffer.from(expected, "hex");
   const b = Buffer.from(received, "hex");
-
   return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+/**
+ * Theo tài liệu createOrder:
+ * - sắp xếp key tăng dần
+ * - object/array phải JSON.stringify khi tạo chuỗi MAC
+ * - extradata và method vốn đã là JSON string
+ */
+export function createOrderMac(input: CreateOrderMacInput, privateKey: string): string {
+  const params: Record<string, unknown> = {
+    amount: input.amount,
+    desc: input.desc,
+    extradata: input.extradata,
+    item: input.item,
+    method: input.method,
+  };
+
+  const dataMac = Object.keys(params)
+    .sort()
+    .map((key) => {
+      const value = params[key];
+      return `${key}=${typeof value === "object" ? JSON.stringify(value) : String(value ?? "")}`;
+    })
+    .join("&");
+
+  return hmacSha256(privateKey, dataMac);
 }
 
 export type CallbackData = {
   appId: string;
   orderId: string;
   transId: string;
-  method?: string;
-  transTime?: string | number;
-  merchantTransId?: string;
   amount: number;
   description: string;
   resultCode: number;
   message: string;
+  method?: string;
   extradata?: string;
-  [key: string]: MacValue;
+  transTime?: string | number;
+  merchantTransId?: string;
+  [key: string]: unknown;
 };
 
-export function verifyCallbackMac(
-  data: CallbackData,
-  receivedMac: string,
-  privateKey: string,
-): boolean {
+export function verifyCallbackMac(data: CallbackData, receivedMac: string, privateKey: string): boolean {
   const content = [
     `appId=${data.appId}`,
     `amount=${data.amount}`,
@@ -61,19 +70,18 @@ export function verifyCallbackMac(
     `resultCode=${data.resultCode}`,
     `transId=${data.transId}`,
   ].join("&");
-
-  return safeEqualHex(hmacSha256(privateKey, content), receivedMac);
+  return timingSafeHexEqual(hmacSha256(privateKey, content), receivedMac);
 }
 
-export function verifyOverallMac(
-  data: CallbackData,
-  receivedOverallMac: string,
-  privateKey: string,
-): boolean {
-  return safeEqualHex(
-    hmacSha256(privateKey, buildSortedMacData(data)),
-    receivedOverallMac,
-  );
+export function verifyOverallMac(data: CallbackData, receivedMac: string, privateKey: string): boolean {
+  const content = Object.keys(data)
+    .sort()
+    .map((key) => {
+      const value = data[key];
+      return `${key}=${typeof value === "object" ? JSON.stringify(value) : String(value ?? "")}`;
+    })
+    .join("&");
+  return timingSafeHexEqual(hmacSha256(privateKey, content), receivedMac);
 }
 
 export function verifyNotifyMac(input: {
@@ -83,13 +91,6 @@ export function verifyNotifyMac(input: {
   receivedMac: string;
   privateKey: string;
 }): boolean {
-  const content =
-    `appId=${input.appId}` +
-    `&orderId=${input.orderId}` +
-    `&method=${input.method}`;
-
-  return safeEqualHex(
-    hmacSha256(input.privateKey, content),
-    input.receivedMac,
-  );
+  const content = `appId=${input.appId}&method=${input.method}&orderId=${input.orderId}`;
+  return timingSafeHexEqual(hmacSha256(input.privateKey, content), input.receivedMac);
 }

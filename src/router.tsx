@@ -13,6 +13,7 @@ import ShippingAddressPage from "./pages/cart/shipping-address";
 import StationsPage from "./pages/cart/stations";
 import OrderDetailPage from "./pages/orders/detail";
 import ProfileEditorPage from "./pages/profile/editor";
+import PaymentResultPage from "./pages/payment-result";
 
 const router = createBrowserRouter(
   [
@@ -56,6 +57,15 @@ const router = createBrowserRouter(
           handle: {
             title: "Giỏ hàng",
             noBack: true,
+            noFloatingCart: true,
+          },
+        },
+        {
+          path: "/payment-result",
+          element: <PaymentResultPage />,
+          handle: {
+            title: "Kết quả thanh toán",
+            noFooter: true,
             noFloatingCart: true,
           },
         },
