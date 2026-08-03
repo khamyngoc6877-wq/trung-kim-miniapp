@@ -1,0 +1,235 @@
+import type { Language } from "@/state/language";
+
+export const translations = {
+  vi: {
+    common: {
+      confirm: "Xác nhận",
+      cancel: "Hủy",
+      close: "Đóng",
+      save: "Lưu",
+      change: "Thay đổi",
+      delete: "Xóa",
+      loading: "Đang xử lý...",
+    },
+
+    navigation: {
+      home: "Trang chủ",
+      categories: "Danh mục",
+      orders: "Đơn hàng",
+      cart: "Giỏ hàng",
+    },
+
+    cart: {
+      title: "Giỏ hàng",
+      shippingMethod: "Hình thức giao hàng",
+      delivery: "Giao tận nơi",
+      pickup: "Tự đến lấy",
+      deliveryDescription: "Tính phí theo địa chỉ",
+      pickupDescription: "Miễn phí vận chuyển",
+      shippingAddress: "Địa chỉ nhận hàng",
+      addShippingAddress: "Thêm địa chỉ nhận hàng",
+      productAmount: "Tiền sản phẩm",
+      shippingFee: "Phí vận chuyển",
+      receivingMethod: "Hình thức nhận",
+      totalPayment: "Tổng thanh toán",
+      payment: "Thanh toán",
+      emptyCart: "Giỏ hàng chưa có sản phẩm",
+    },
+
+    payment: {
+      information: "Thông tin thanh toán",
+      paymentMethod: "Phương thức thanh toán",
+      cod: "Thanh toán khi nhận hàng",
+      codShort: "COD",
+      zalopay: "Thanh toán qua ZaloPay",
+      onlinePayment: "Thanh toán trực tuyến",
+      placeCodOrder: "Đặt hàng COD",
+      payWithZaloPay: "Thanh toán ZaloPay",
+      orderSuccess: "Đặt hàng thành công",
+      paymentSuccess: "Thanh toán thành công",
+      paymentFailed: "Thanh toán không thành công",
+      processing: "Đang xác nhận đơn hàng...",
+      missingAddress: "Bạn chưa nhập địa chỉ nhận hàng.",
+      freeShipping: "Miễn phí vận chuyển",
+    },
+
+    address: {
+      title: "Địa chỉ nhận hàng",
+      addressName: "Tên địa chỉ",
+      addressNamePlaceholder: "Ví dụ: Nhà riêng, công ty",
+      address: "Địa chỉ",
+      addressPlaceholder: "Nhập địa chỉ nhận hàng",
+      receiverName: "Tên người nhận",
+      receiverNamePlaceholder: "Nhập tên người nhận",
+      phone: "Số điện thoại",
+      deleteAddress: "Xóa địa chỉ này",
+      updated: "Đã cập nhật địa chỉ",
+      deleted: "Đã xóa địa chỉ",
+      required: "Vui lòng nhập địa chỉ",
+      done: "Xong",
+    },
+
+    language: {
+      title: "Ngôn ngữ",
+      vietnamese: "Tiếng Việt",
+      chinese: "中文",
+      english: "English",
+    },
+  },
+
+  zh: {
+    common: {
+      confirm: "确认",
+      cancel: "取消",
+      close: "关闭",
+      save: "保存",
+      change: "更改",
+      delete: "删除",
+      loading: "处理中...",
+    },
+
+    navigation: {
+      home: "首页",
+      categories: "分类",
+      orders: "订单",
+      cart: "购物车",
+    },
+
+    cart: {
+      title: "购物车",
+      shippingMethod: "收货方式",
+      delivery: "送货上门",
+      pickup: "到店自取",
+      deliveryDescription: "根据地址计算运费",
+      pickupDescription: "免运费",
+      shippingAddress: "收货地址",
+      addShippingAddress: "添加收货地址",
+      productAmount: "商品金额",
+      shippingFee: "运费",
+      receivingMethod: "收货方式",
+      totalPayment: "付款总额",
+      payment: "付款",
+      emptyCart: "购物车中没有商品",
+    },
+
+    payment: {
+      information: "付款信息",
+      paymentMethod: "付款方式",
+      cod: "货到付款",
+      codShort: "COD",
+      zalopay: "ZaloPay付款",
+      onlinePayment: "在线付款",
+      placeCodOrder: "提交COD订单",
+      payWithZaloPay: "使用ZaloPay付款",
+      orderSuccess: "下单成功",
+      paymentSuccess: "付款成功",
+      paymentFailed: "付款失败",
+      processing: "正在确认订单...",
+      missingAddress: "您还没有填写收货地址。",
+      freeShipping: "免运费",
+    },
+
+    address: {
+      title: "收货地址",
+      addressName: "地址名称",
+      addressNamePlaceholder: "例如：家庭、公司",
+      address: "地址",
+      addressPlaceholder: "请输入收货地址",
+      receiverName: "收货人姓名",
+      receiverNamePlaceholder: "请输入收货人姓名",
+      phone: "电话号码",
+      deleteAddress: "删除此地址",
+      updated: "地址已更新",
+      deleted: "地址已删除",
+      required: "请输入地址",
+      done: "完成",
+    },
+
+    language: {
+      title: "语言",
+      vietnamese: "Tiếng Việt",
+      chinese: "中文",
+      english: "English",
+    },
+  },
+
+  en: {
+    common: {
+      confirm: "Confirm",
+      cancel: "Cancel",
+      close: "Close",
+      save: "Save",
+      change: "Change",
+      delete: "Delete",
+      loading: "Processing...",
+    },
+
+    navigation: {
+      home: "Home",
+      categories: "Categories",
+      orders: "Orders",
+      cart: "Cart",
+    },
+
+    cart: {
+      title: "Cart",
+      shippingMethod: "Delivery method",
+      delivery: "Home delivery",
+      pickup: "Store pickup",
+      deliveryDescription: "Shipping fee based on address",
+      pickupDescription: "Free shipping",
+      shippingAddress: "Shipping address",
+      addShippingAddress: "Add shipping address",
+      productAmount: "Product amount",
+      shippingFee: "Shipping fee",
+      receivingMethod: "Receiving method",
+      totalPayment: "Total payment",
+      payment: "Payment",
+      emptyCart: "Your cart is empty",
+    },
+
+    payment: {
+      information: "Payment information",
+      paymentMethod: "Payment method",
+      cod: "Cash on delivery",
+      codShort: "COD",
+      zalopay: "Pay with ZaloPay",
+      onlinePayment: "Online payment",
+      placeCodOrder: "Place COD order",
+      payWithZaloPay: "Pay with ZaloPay",
+      orderSuccess: "Order placed successfully",
+      paymentSuccess: "Payment successful",
+      paymentFailed: "Payment failed",
+      processing: "Confirming your order...",
+      missingAddress: "Please enter a shipping address.",
+      freeShipping: "Free shipping",
+    },
+
+    address: {
+      title: "Shipping address",
+      addressName: "Address name",
+      addressNamePlaceholder: "Example: Home, company",
+      address: "Address",
+      addressPlaceholder: "Enter shipping address",
+      receiverName: "Recipient name",
+      receiverNamePlaceholder: "Enter recipient name",
+      phone: "Phone number",
+      deleteAddress: "Delete this address",
+      updated: "Address updated",
+      deleted: "Address deleted",
+      required: "Please enter an address",
+      done: "Done",
+    },
+
+    language: {
+      title: "Language",
+      vietnamese: "Tiếng Việt",
+      chinese: "中文",
+      english: "English",
+    },
+  },
+} as const;
+
+export type TranslationKey =
+  | keyof typeof translations.vi.common
+  | keyof typeof translations.vi.navigation;
