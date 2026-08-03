@@ -15,11 +15,21 @@ import { Icon } from "zmp-ui";
 import { DefaultUserAvatar } from "./vectors";
 
 export default function Header() {
-  const categories = useAtomValue(categoriesStateUpwrapped);
+  const categories = useAtomValue(
+    categoriesStateUpwrapped,
+  );
+
+  const userInfo = useAtomValue(
+    loadableUserInfoState,
+  );
+
   const navigate = useNavigate();
   const location = useLocation();
-  const [handle, match] = useRouteHandle();
-  const userInfo = useAtomValue(loadableUserInfoState);
+
+  const routeResult = useRouteHandle();
+
+  const handle = routeResult?.[0];
+  const match = routeResult?.[1];
 
   const title = useMemo(() => {
     if (!handle) {
@@ -29,16 +39,32 @@ export default function Header() {
     if (typeof handle.title === "function") {
       return handle.title({
         categories,
-        params: match.params,
+        params: match?.params ?? {},
       });
     }
 
-    return handle.title ?? "";
-  }, [handle, categories, match.params]);
+    return String(handle.title ?? "");
+  }, [
+    handle,
+    categories,
+    match?.params,
+  ]);
 
   const showBack =
     location.key !== "default" &&
     !handle?.noBack;
+
+  const shopLogo = getConfig(
+    (config) => config.template.logoUrl,
+  );
+
+  const shopName = getConfig(
+    (config) => config.template.shopName,
+  );
+
+  const shopAddress = getConfig(
+    (config) => config.template.shopAddress,
+  );
 
   return (
     <header
@@ -47,34 +73,22 @@ export default function Header() {
         backgroundImage: `url(${headerIllus})`,
       }}
     >
-      {/* Dòng tiêu đề chính */}
       <div className="flex min-h-12 w-full items-center gap-2 py-2">
         {handle?.logo ? (
           <>
-            {/* Logo cửa hàng */}
             <img
-              src={getConfig(
-                (config) =>
-                  config.template.logoUrl,
-              )}
-              alt={getConfig(
-                (config) =>
-                  config.template.shopName,
-              )}
+              src={shopLogo}
+              alt={shopName || "Logo cửa hàng"}
               className="h-8 w-8 flex-none rounded-full object-cover"
             />
 
-            {/* Tên và địa chỉ cửa hàng */}
             <TransitionLink
               to="/stations"
               className="min-w-0 flex-1 overflow-hidden"
             >
               <div className="flex min-w-0 items-center gap-1">
                 <h1 className="truncate text-lg font-bold">
-                  {getConfig(
-                    (config) =>
-                      config.template.shopName,
-                  )}
+                  {shopName}
                 </h1>
 
                 <Icon
@@ -84,21 +98,16 @@ export default function Header() {
               </div>
 
               <p className="truncate text-2xs">
-                {getConfig(
-                  (config) =>
-                    config.template.shopAddress,
-                )}
+                {shopAddress}
               </p>
             </TransitionLink>
 
-            {/* Nút đổi ngôn ngữ */}
             <div className="flex-none">
               <LanguageSelector />
             </div>
           </>
         ) : (
           <>
-            {/* Nút quay lại */}
             {showBack && (
               <button
                 type="button"
@@ -110,12 +119,10 @@ export default function Header() {
               </button>
             )}
 
-            {/* Tiêu đề trang */}
             <div className="min-w-0 flex-1 truncate text-xl font-medium">
               {title}
             </div>
 
-            {/* Nút đổi ngôn ngữ */}
             <div className="flex-none">
               <LanguageSelector />
             </div>
@@ -123,15 +130,13 @@ export default function Header() {
         )}
       </div>
 
-      {/* Thanh tìm kiếm và avatar */}
       {handle?.search && (
         <div className="flex w-full items-center gap-2 py-2">
           <div className="min-w-0 flex-1">
             <SearchBar
               onFocus={() => {
                 if (
-                  location.pathname !==
-                  "/search"
+                  location.pathname !== "/search"
                 ) {
                   navigate("/search", {
                     viewTransition: true,
