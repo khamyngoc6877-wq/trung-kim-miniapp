@@ -13,6 +13,7 @@ import TransitionLink from "./transition-link";
 import LanguageSelector from "./language-selector";
 import { Icon } from "zmp-ui";
 import { DefaultUserAvatar } from "./vectors";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function Header() {
   const categories = useAtomValue(
@@ -27,6 +28,7 @@ export default function Header() {
   const location = useLocation();
 
   const routeResult = useRouteHandle();
+  const { t } = useTranslation();
 
   const handle = routeResult?.[0];
   const match = routeResult?.[1];
@@ -34,6 +36,10 @@ export default function Header() {
   const title = useMemo(() => {
     if (!handle) {
       return "";
+    }
+
+    if (handle.titleKey) {
+      return t("header", handle.titleKey);
     }
 
     if (typeof handle.title === "function") {
@@ -48,6 +54,7 @@ export default function Header() {
     handle,
     categories,
     match?.params,
+    t,
   ]);
 
   const showBack =
@@ -78,7 +85,7 @@ export default function Header() {
           <>
             <img
               src={shopLogo}
-              alt={shopName || "Logo cửa hàng"}
+              alt={shopName || t("header", "shopLogo")}
               className="h-8 w-8 flex-none rounded-full object-cover"
             />
 
@@ -111,7 +118,7 @@ export default function Header() {
             {showBack && (
               <button
                 type="button"
-                aria-label="Quay lại"
+                aria-label={t("header", "back")}
                 className="flex h-9 w-9 flex-none items-center justify-center rounded-full"
                 onClick={() => navigate(-1)}
               >
@@ -155,7 +162,7 @@ export default function Header() {
               <img
                 className="h-8 w-8 rounded-full object-cover"
                 src={userInfo.data.avatar}
-                alt="Ảnh đại diện"
+                alt={t("header", "avatar")}
               />
             ) : (
               <DefaultUserAvatar

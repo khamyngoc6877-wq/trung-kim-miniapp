@@ -5,14 +5,16 @@ import { cartState, cartTotalState } from "@/state";
 import { formatPrice } from "@/utils/format";
 import TransitionLink from "./transition-link";
 import { useRouteHandle } from "@/hooks";
+import { useTranslation } from "@/hooks/use-translation";
 
 function FloatingCartPreview() {
   const cart = useAtomValue(cartState);
   const { totalItems, totalAmount } = useAtomValue(cartTotalState);
   const [handle] = useRouteHandle();
+  const { t } = useTranslation();
 
   if (totalItems === 0 || handle?.noFloatingCart) {
-    return <></>;
+    return null;
   }
 
   return (
@@ -20,20 +22,17 @@ function FloatingCartPreview() {
       to="/cart"
       className={`fixed left-4 right-4 ${
         handle?.noFooter ? "bottom-6" : "bottom-16"
-      } mb-sb flex items-center space-x-2 text-left bg-primary text-primaryForeground px-4 py-2 rounded-lg`}
+      } mb-sb flex items-center space-x-2 rounded-lg bg-primary px-4 py-2 text-left text-primaryForeground`}
     >
-      <Badge
-        value={cart.length}
-        style={{
-          boxShadow: "none",
-        }}
-      >
+      <Badge value={cart.length} style={{ boxShadow: "none" }}>
         <CartIcon mono />
       </Badge>
-      <span className="text-base font-medium flex-1">
+
+      <span className="flex-1 text-base font-medium">
         {formatPrice(totalAmount)}
       </span>
-      <span className="text-sm">Đặt mua</span>
+
+      <span className="text-sm">{t("product", "placeOrder")}</span>
     </TransitionLink>
   );
 }

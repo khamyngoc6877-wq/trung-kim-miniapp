@@ -1,14 +1,4 @@
 import { useEffect } from "react";
 import { showOAWidget } from "zmp-sdk/apis";
-
-export default function FollowOAWidget() {
-  useEffect(() => {
-    showOAWidget({
-      id: "oaWidget",
-      guidingText: "Quan tâm OA để nhận các đặc quyền ưu đãi",
-      color: "#F7F7F8",
-    });
-  }, []);
-
-  return <div id="oaWidget" />;
-}
+import { useTranslation } from "@/hooks/use-translation";
+export default function FollowOAWidget(){ const {t,language}=useTranslation(); useEffect(()=>{showOAWidget({id:"oaWidget",guidingText:t("profile","followOA"),color:"#F7F7F8"});},[language,t]); return <div id="oaWidget"/>; }

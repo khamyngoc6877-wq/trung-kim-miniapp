@@ -10,14 +10,16 @@ import {
 } from "@/state";
 import ProductGrid from "@/components/product-grid";
 import { EmptySearchResult } from "@/components/empty";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function SearchResult() {
   const searchResult = useAtomValue(searchResultState);
+  const { t } = useTranslation();
 
   return (
     <div className="w-full h-full space-y-2 bg-background">
       <Section
-        title={`Kết quả (${searchResult.length})`}
+        title={`${t("search", "results")} (${searchResult.length})`}
         className="h-full flex flex-col overflow-y-auto pb-16"
       >
         {searchResult.length ? (
@@ -31,8 +33,9 @@ export function SearchResult() {
 }
 
 export function SearchResultSkeleton() {
+  const { t } = useTranslation();
   return (
-    <Section title={`Kết quả`}>
+    <Section title={t("search", "results")}>
       <ProductGridSkeleton />
     </Section>
   );
@@ -59,9 +62,10 @@ export function ProductGridSkeleton({
 
 export function RecommendedProducts() {
   const recommendedProducts = useAtomValue(recommendedProductsState);
+  const { t } = useTranslation();
 
   return (
-    <Section title="Gợi ý sản phẩm">
+    <Section title={t("search", "recommended")}>
       <div className="py-2 px-4 pb-6 flex space-x-2 overflow-x-auto">
         {recommendedProducts.map((product) => (
           <div

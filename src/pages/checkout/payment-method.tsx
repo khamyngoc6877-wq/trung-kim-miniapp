@@ -1,12 +1,14 @@
 import { useAtom } from "jotai";
-import { paymentMethodState } from "@/state";
+import { paymentMethodState } from "@/state/payment";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function PaymentMethod() {
   const [paymentMethod, setPaymentMethod] = useAtom(paymentMethodState);
+  const { t } = useTranslation();
 
   return (
     <div className="bg-section px-4 py-3">
-      <div className="font-medium mb-2">Phương thức thanh toán</div>
+      <div className="font-medium mb-2">{t("payment", "paymentMethod")}</div>
 
       <label className="flex items-start gap-3 py-3 border-b">
         <input
@@ -18,9 +20,9 @@ export default function PaymentMethod() {
           className="mt-1"
         />
         <div>
-          <div className="text-sm font-medium">Thanh toán khi nhận hàng</div>
+          <div className="text-sm font-medium">{t("payment", "cod")}</div>
           <div className="text-xs text-subtitle mt-1">
-            Thanh toán tiền mặt cho nhân viên giao hàng
+            {t("payment", "codDescription")}
           </div>
         </div>
       </label>
@@ -35,9 +37,9 @@ export default function PaymentMethod() {
           className="mt-1"
         />
         <div>
-          <div className="text-sm font-medium">Thanh toán qua ZaloPay</div>
+          <div className="text-sm font-medium">{t("payment", "zalopay")}</div>
           <div className="text-xs text-subtitle mt-1">
-            Thanh toán trực tuyến bằng ứng dụng ZaloPay
+            {t("payment", "zalopayDescription")}
           </div>
         </div>
       </label>

@@ -1,11 +1,14 @@
-import { useCheckout } from "@/hooks/use-checkout";
+import { useMemo, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
+import toast from "react-hot-toast";
+import { Button, Radio, Sheet } from "zmp-ui";
+import { useCheckout } from "@/hooks/use-checkout";
+import { useTranslation } from "@/hooks/use-translation";
+import { cartState, cartTotalState } from "@/state";
 import {
-  cartState,
-  cartTotalState,
   deliveryModeState,
   shippingAddressState,
-} from "@/state";
+} from "@/state/shipping";
 import type { PaymentMethod } from "@/types/payment";
 import { formatPrice } from "@/utils/format";
 import {
@@ -14,9 +17,6 @@ import {
   FREE_SHIPPING_MINIMUM,
   type ShippingMethod,
 } from "@/utils/shipping";
-import { useMemo, useState } from "react";
-import toast from "react-hot-toast";
-import { Button, Radio, Sheet } from "zmp-ui";
 
 const ZALOPAY_ENABLED =
   String(import.meta.env.VITE_ENABLE_ZALOPAY ?? "false") === "true";
@@ -25,10 +25,10 @@ export default function Pay() {
   const cart = useAtomValue(cartState);
   const { totalAmount: subtotal } = useAtomValue(cartTotalState);
   const shippingAddress = useAtomValue(shippingAddressState);
-
   const [deliveryMode, setDeliveryMode] = useAtom(deliveryModeState);
 
   const checkout = useCheckout();
+  const { t } = useTranslation();
 
   const [paying, setPaying] = useState(false);
   const [showPaymentSheet, setShowPaymentSheet] = useState(false);
@@ -61,19 +61,21 @@ export default function Pay() {
     () =>
       cart.map((cartItem) => ({
         id: String(cartItem.product.id),
-        name: cartItem.product.name ?? "Sản phẩm",
+        name:
+          cartItem.product.name ??
+          t("payment", "defaultProductName"),
         quantity: cartItem.quantity,
-        amount: cartItem.product.price * cartItem.quantity,
+        amount:
+          cartItem.product.price * cartItem.quantity,
       })),
-    [cart],
+    [cart, t],
   );
 
   const isMissingAddress =
     shippingMethod === "delivery" &&
     !shippingAddress?.address?.trim();
 
-  const isFreeShipping =
-    subtotal > 0 && shippingFee === 0;
+  const isFreeShipping = subtotal > 0 && shippingFee === 0;
 
   const canCheckout =
     !paying &&
@@ -83,7 +85,7 @@ export default function Pay() {
 
   const handleOpenPaymentSheet = () => {
     if (subtotal <= 0) {
-      toast.error("Giỏ hàng chưa có sản phẩm");
+      toast.error(t("payment", "emptyCart"));
       return;
     }
 
@@ -96,22 +98,17 @@ export default function Pay() {
     }
 
     if (paymentItems.length === 0) {
-      toast.error("Đơn hàng chưa có sản phẩm");
+      toast.error(t("payment", "emptyOrder"));
       return;
     }
 
     if (isMissingAddress) {
-      toast.error("Bạn chưa nhập địa chỉ nhận hàng");
+      toast.error(t("payment", "missingAddress"));
       return;
     }
 
-    if (
-      paymentMethod === "zalopay" &&
-      !ZALOPAY_ENABLED
-    ) {
-      toast.error(
-        "ZaloPay chưa được kích hoạt cho Mini App này",
-      );
+    if (paymentMethod === "zalopay" && !ZALOPAY_ENABLED) {
+      toast.error(t("payment", "zalopayUnavailable"));
       return;
     }
 
@@ -136,16 +133,11 @@ export default function Pay() {
       });
 
       console.log("Checkout result:", result);
-
-      /*
-       * Không đóng Sheet trước khi Checkout SDK mở xong.
-       * Khi SDK hoàn tất, Zalo sẽ chuyển về Redirect Path.
-       */
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Thanh toán thất bại";
+          : t("payment", "failed");
 
       console.error("CHECKOUT_ERROR:", error);
       toast.error(message);
@@ -156,22 +148,19 @@ export default function Pay() {
 
   return (
     <>
-      {/* Thanh tổng tiền phía dưới trang giỏ hàng */}
       <div className="flex-none border-t bg-section px-4 py-3">
         <div className="space-y-3">
           <div className="flex justify-between gap-4 text-sm">
             <span className="text-subtitle">
-              Tiền sản phẩm
+              {t("cart", "productAmount")}
             </span>
-
             <span>{formatPrice(subtotal)}</span>
           </div>
 
           <div className="flex justify-between gap-4 text-sm">
             <span className="text-subtitle">
-              Phí vận chuyển
+              {t("cart", "shippingFee")}
             </span>
-
             <span
               className={
                 shippingFee === 0
@@ -180,29 +169,27 @@ export default function Pay() {
               }
             >
               {shippingFee === 0
-                ? "Miễn phí vận chuyển"
+                ? t("cart", "freeShipping")
                 : formatPrice(shippingFee)}
             </span>
           </div>
 
           <div className="flex justify-between gap-4 text-sm">
             <span className="text-subtitle">
-              Hình thức nhận
+              {t("cart", "receivingMethod")}
             </span>
-
             <span>
               {isPickup
-                ? "Tự đến lấy hàng"
-                : "Giao tận nơi"}
+                ? t("cart", "pickup")
+                : t("cart", "delivery")}
             </span>
           </div>
 
           <div className="flex items-center gap-3 border-t pt-3">
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium">
-                Tổng thanh toán
+                {t("cart", "total")}
               </div>
-
               <div className="text-lg font-semibold text-primary">
                 {formatPrice(finalTotal)}
               </div>
@@ -212,13 +199,12 @@ export default function Pay() {
               disabled={paying || subtotal <= 0}
               onClick={handleOpenPaymentSheet}
             >
-              Thanh toán
+              {t("cart", "payment")}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Sheet thanh toán */}
       <Sheet
         visible={showPaymentSheet}
         onClose={() => {
@@ -229,7 +215,7 @@ export default function Pay() {
         mask
         handler
         swipeToClose={!paying}
-        title="Thông tin thanh toán"
+        title={t("payment", "information")}
       >
         <div
           className="flex min-h-0 flex-col bg-section"
@@ -238,13 +224,11 @@ export default function Pay() {
             maxHeight: "calc(100dvh - 96px)",
           }}
         >
-          {/* Khu vực nội dung cuộn */}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
             <div className="space-y-5">
-              {/* Hình thức nhận hàng */}
               <section>
                 <div className="mb-3 font-medium">
-                  Hình thức nhận hàng
+                  {t("cart", "shippingMethod")}
                 </div>
 
                 <Radio.Group
@@ -266,14 +250,12 @@ export default function Pay() {
                       }`}
                     >
                       <Radio value="delivery" />
-
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">
-                          Giao tận nơi
+                          {t("cart", "delivery")}
                         </div>
-
                         <div className="text-xs text-subtitle">
-                          Tính phí theo địa chỉ
+                          {t("cart", "deliveryDescription")}
                         </div>
                       </div>
                     </label>
@@ -286,14 +268,12 @@ export default function Pay() {
                       }`}
                     >
                       <Radio value="pickup" />
-
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">
-                          Tự đến lấy hàng
+                          {t("cart", "pickup")}
                         </div>
-
                         <div className="text-xs text-green-600">
-                          Miễn phí vận chuyển
+                          {t("cart", "freeShipping")}
                         </div>
                       </div>
                     </label>
@@ -301,7 +281,6 @@ export default function Pay() {
                 </Radio.Group>
               </section>
 
-              {/* Địa chỉ giao hàng */}
               {shippingMethod === "delivery" && (
                 <section
                   className={`rounded-lg border p-4 ${
@@ -312,10 +291,9 @@ export default function Pay() {
                 >
                   <div className="font-medium">
                     {shippingArea === "hcm"
-                      ? "TP. Hồ Chí Minh"
-                      : "Tỉnh, thành phố khác"}
+                      ? t("cart", "hcm")
+                      : t("cart", "otherArea")}
                   </div>
-
                   <div
                     className={`mt-1 break-words text-xs ${
                       isMissingAddress
@@ -324,23 +302,20 @@ export default function Pay() {
                     }`}
                   >
                     {shippingAddress?.address?.trim() ||
-                      "Chưa có địa chỉ nhận hàng"}
+                      t("cart", "missingAddressText")}
                   </div>
                 </section>
               )}
 
-              {/* Phương thức thanh toán */}
               <section>
                 <div className="mb-3 font-medium">
-                  Phương thức thanh toán
+                  {t("payment", "paymentMethod")}
                 </div>
 
                 <Radio.Group
                   value={paymentMethod}
                   onChange={(value) =>
-                    setPaymentMethod(
-                      value as PaymentMethod,
-                    )
+                    setPaymentMethod(value as PaymentMethod)
                   }
                 >
                   <div className="space-y-3">
@@ -352,15 +327,11 @@ export default function Pay() {
                       }`}
                     >
                       <Radio value="cash" />
-
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">
-                          Thanh toán khi nhận hàng
+                          {t("payment", "cod")}
                         </div>
-
-                        <div className="text-xs text-subtitle">
-                          COD
-                        </div>
+                        <div className="text-xs text-subtitle">COD</div>
                       </div>
                     </label>
 
@@ -373,101 +344,77 @@ export default function Pay() {
                         }`}
                       >
                         <Radio value="zalopay" />
-
                         <div className="min-w-0 flex-1">
                           <div className="font-medium">
-                            Thanh toán qua ZaloPay
+                            {t("payment", "zalopay")}
                           </div>
-
                           <div className="text-xs text-subtitle">
-                            Thanh toán trực tuyến
+                            {t("payment", "onlinePayment")}
                           </div>
                         </div>
                       </label>
                     ) : (
                       <div className="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-subtitle">
-                        ZaloPay đang tạm ẩn. Bật{" "}
-                        <strong>
-                          VITE_ENABLE_ZALOPAY=true
-                        </strong>{" "}
-                        sau khi đã cấu hình ZaloPay
-                        Merchant Sandbox trong trang quản lý
-                        Mini App.
+                        {t("payment", "zalopayHidden")}
                       </div>
                     )}
                   </div>
                 </Radio.Group>
               </section>
 
-              {/* Chi tiết thanh toán */}
               <section className="space-y-3 rounded-lg bg-gray-50 p-4">
                 <div className="flex justify-between gap-4 text-sm">
-                  <span>Tiền sản phẩm</span>
-
-                  <span>
-                    {formatPrice(subtotal)}
-                  </span>
+                  <span>{t("cart", "productAmount")}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
 
                 <div className="flex justify-between gap-4 text-sm">
-                  <span>Phí vận chuyển</span>
-
+                  <span>{t("cart", "shippingFee")}</span>
                   <span>
                     {shippingFee === 0
-                      ? "Miễn phí"
+                      ? t("cart", "freeShippingShort")
                       : formatPrice(shippingFee)}
                   </span>
                 </div>
 
                 <div className="flex justify-between gap-4 border-t pt-3">
                   <span className="font-medium">
-                    Tổng thanh toán
+                    {t("cart", "total")}
                   </span>
-
                   <span className="text-lg font-semibold text-primary">
                     {formatPrice(finalTotal)}
                   </span>
                 </div>
               </section>
 
-              {/* Cảnh báo thiếu địa chỉ */}
               {isMissingAddress && (
                 <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-                  Bạn chưa nhập địa chỉ nhận hàng.
+                  {t("payment", "missingAddress")}
                 </div>
               )}
 
-              {/* Thông báo miễn phí vận chuyển */}
               {shippingMethod === "delivery" &&
                 subtotal > 0 &&
-                subtotal <
-                  FREE_SHIPPING_MINIMUM && (
+                subtotal < FREE_SHIPPING_MINIMUM && (
                   <div className="rounded-lg bg-yellow-50 p-3 text-xs text-yellow-700">
-                    Mua thêm{" "}
-                    {formatPrice(
-                      FREE_SHIPPING_MINIMUM -
-                        subtotal,
-                    )}{" "}
-                    để được miễn phí vận chuyển.
+                    {t("cart", "buyMore")} {formatPrice(
+                      FREE_SHIPPING_MINIMUM - subtotal,
+                    )} {t("cart", "toGetFreeShipping")}
                   </div>
                 )}
 
               {!isPickup &&
                 isFreeShipping &&
-                subtotal >=
-                  FREE_SHIPPING_MINIMUM && (
+                subtotal >= FREE_SHIPPING_MINIMUM && (
                   <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600">
-                    Đơn hàng đã được miễn phí vận
-                    chuyển.
+                    {t("cart", "freeShippingApplied")}
                   </div>
                 )}
 
-              {/* Khoảng trống cuối vùng cuộn */}
               <div className="h-2" />
             </div>
           </div>
 
-          {/* Footer cố định: nút luôn hiển thị */}
           <div
             className="flex-none border-t bg-section px-4 pt-3"
             style={{
@@ -482,8 +429,8 @@ export default function Pay() {
               onClick={handleCheckout}
             >
               {paymentMethod === "cash"
-                ? "Đặt hàng COD"
-                : "Thanh toán ZaloPay"}
+                ? t("payment", "placeCodOrder")
+                : t("payment", "payWithZaloPay")}
             </Button>
           </div>
         </div>

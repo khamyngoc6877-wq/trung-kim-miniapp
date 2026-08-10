@@ -5,6 +5,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { Suspense } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/use-translation";
 
 function Station({
   station,
@@ -34,6 +35,7 @@ function Stations() {
   const stations = useAtomValue(stationsState);
   const setSelectedStation = useSetAtom(selectedStationIndexState);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return stations.map((station, i) => (
     <Station
@@ -41,7 +43,7 @@ function Stations() {
       station={station}
       onSelect={() => {
         setSelectedStation(i);
-        toast.success("Đã thay đổi điểm nhận hàng");
+        toast.success(t("common", "stationChanged"));
         navigate(-1);
       }}
     />

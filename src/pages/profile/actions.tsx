@@ -6,9 +6,11 @@ import {
 import { useToBeImplemented } from "@/hooks";
 import { OrderStatus } from "@/types";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function ProfileActions() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const goToOrders = (status: OrderStatus) => {
     navigate(`/orders/${status}`);
   };
@@ -17,17 +19,17 @@ export default function ProfileActions() {
     <div className="bg-white rounded-lg p-4 grid grid-cols-3 gap-4 border-[0.5px] border-black/15">
       {[
         {
-          label: "Đang xử lý",
+          label: t("profile", "processing"),
           icon: VoucherIcon,
           onClick: () => goToOrders("pending"),
         },
         {
-          label: "Đang giao",
+          label: t("profile", "shipping"),
           icon: PackageIcon,
           onClick: () => goToOrders("shipping"),
         },
         {
-          label: "Lịch sử",
+          label: t("profile", "history"),
           icon: OrderHistoryIcon,
           onClick: () => goToOrders("completed"),
         },

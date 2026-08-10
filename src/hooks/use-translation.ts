@@ -1,34 +1,16 @@
 import { useAtom } from "jotai";
-import { languageState } from "@/state";
+import { languageState } from "@/state/language";
 import { translations } from "@/i18n/translations";
 
-type TranslationObject =
-  typeof translations.vi;
-
-type Section = keyof TranslationObject;
-
 export function useTranslation() {
-  const [language, setLanguage] =
-    useAtom(languageState);
+  const [language, setLanguage] = useAtom(languageState);
+  const dictionary = translations[language] ?? translations.vi;
 
-  const dictionary =
-    translations[language];
-
-  function t<
-    S extends Section,
-    K extends keyof TranslationObject[S],
-  >(
-    section: S,
-    key: K,
-  ): string {
-    return String(
-      dictionary[section][key],
-    );
+  function t(section: string, key: string): string {
+    const sectionValue = (dictionary as Record<string, Record<string, string>>)[section];
+    const fallbackSection = (translations.vi as Record<string, Record<string, string>>)[section];
+    return sectionValue?.[key] ?? fallbackSection?.[key] ?? `${section}.${key}`;
   }
 
-  return {
-    language,
-    setLanguage,
-    t,
-  };
+  return { language, setLanguage, t };
 }

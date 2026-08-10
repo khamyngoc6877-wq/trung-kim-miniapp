@@ -8,6 +8,7 @@ import RelatedProducts from "./related-products";
 import { useAddToCart } from "@/hooks";
 import { Button } from "zmp-ui";
 import Section from "@/components/section";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function ProductDetailPage() {
 
   const navigate = useNavigate();
   const { addToCart } = useAddToCart(product);
+  const { t } = useTranslation();
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -53,7 +55,7 @@ export default function ProductDetailPage() {
         {product.detail && (
           <>
             <div className="bg-background h-2 w-full"></div>
-            <Section title="Mô tả sản phẩm">
+            <Section title={t("product", "description")}>
               <div className="text-sm whitespace-pre-wrap text-subtitle p-4 pt-2">
                 {product.detail}
               </div>
@@ -61,7 +63,7 @@ export default function ProductDetailPage() {
           </>
         )}
         <div className="bg-background h-2 w-full"></div>
-        <Section title="Sản phẩm khác">
+        <Section title={t("product", "related")}>
           <RelatedProducts currentProductId={product.id} />
         </Section>
       </div>
@@ -76,7 +78,7 @@ export default function ProductDetailPage() {
             });
           }}
         >
-          Thêm vào giỏ
+          {t("product", "addToCart")}
         </Button>
         <Button
           onClick={() => {
@@ -86,7 +88,7 @@ export default function ProductDetailPage() {
             });
           }}
         >
-          Mua ngay
+          {t("product", "buyNow")}
         </Button>
       </div>
     </div>

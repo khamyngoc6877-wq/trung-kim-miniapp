@@ -2,11 +2,13 @@ import { CartItem } from "@/types";
 import OrderItem from "./order-item";
 import { useState } from "react";
 import { Icon, List } from "zmp-ui";
+import { useTranslation } from "@/hooks/use-translation";
 
 function CollapsibleOrderItems(props: {
   items: CartItem[];
   defaultExpanded?: boolean;
 }) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(
     props.defaultExpanded ? false : true
   );
@@ -29,7 +31,7 @@ function CollapsibleOrderItems(props: {
             });
           }}
         >
-          <span>Xem thêm</span>
+          <span>{t("common", "more")}</span>
           <Icon icon="zi-chevron-down" />
         </button>
       )}

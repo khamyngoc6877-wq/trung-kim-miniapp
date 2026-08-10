@@ -1,8 +1,10 @@
 import { useRequestInformation } from "@/hooks";
 import registerIllusRight from "@/static/register-illus-right.svg";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function Register() {
   const requestInfo = useRequestInformation();
+  const { t } = useTranslation();
 
   return (
     <button
@@ -15,8 +17,8 @@ export default function Register() {
       }}
       onClick={requestInfo}
     >
-      <div className="text-lg">Đăng ký thành viên</div>
-      <div className="text-2xs">Đăng ký thành viên để nhận nhiều ưu đãi</div>
+      <div className="text-lg">{t("profile", "register")}</div>
+      <div className="text-2xs">{t("profile", "registerDescription")}</div>
     </button>
   );
 }

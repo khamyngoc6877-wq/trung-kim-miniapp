@@ -9,6 +9,7 @@ import {
 } from "@/services/payment.service";
 import { cartState } from "@/state";
 import type { StoredOrder } from "@/types/payment";
+import { useTranslation } from "@/hooks/use-translation";
 
 const MAX_ATTEMPTS = 10;
 const DELAY_MS = 1500;
@@ -19,11 +20,12 @@ function wait(ms: number): Promise<void> {
 
 export default function PaymentResultPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const setCart = useSetAtom(cartState);
   const pending = useMemo(() => readPendingPayment(), []);
   const [order, setOrder] = useState<StoredOrder | null>(null);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("Đang xác nhận đơn hàng...");
+  const [message, setMessage] = useState(t("paymentResult", "confirming"));
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +33,7 @@ export default function PaymentResultPage() {
     async function checkResult() {
       if (!pending?.merchantOrderId) {
         setLoading(false);
-        setMessage("Không tìm thấy thông tin đơn hàng đang xử lý.");
+        setMessage(t("paymentResult", "missingPending"));
         return;
       }
 
@@ -45,7 +47,7 @@ export default function PaymentResultPage() {
             setCart([]);
             clearPendingPayment();
             setLoading(false);
-            setMessage("Đặt hàng COD thành công.");
+            setMessage(t("paymentResult", "codSuccess"));
             return;
           }
 
@@ -53,14 +55,14 @@ export default function PaymentResultPage() {
             setCart([]);
             clearPendingPayment();
             setLoading(false);
-            setMessage("Thanh toán ZaloPay thành công.");
+            setMessage(t("paymentResult", "zalopaySuccess"));
             return;
           }
 
           if (result.paymentStatus === "failed") {
             clearPendingPayment();
             setLoading(false);
-            setMessage(result.paymentMessage || "Thanh toán không thành công.");
+            setMessage(result.paymentMessage || t("paymentResult", "onlineFailed"));
             return;
           }
         } catch (error) {
@@ -76,8 +78,8 @@ export default function PaymentResultPage() {
         setLoading(false);
         setMessage(
           pending.paymentMethod === "cash"
-            ? "Đơn COD đang chờ hệ thống xác nhận. Bạn có thể kiểm tra lại trong mục Đơn hàng."
-            : "Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.",
+            ? t("paymentResult", "codWaiting")
+            : t("paymentResult", "transactionPending"),
         );
       }
     }
@@ -86,7 +88,7 @@ export default function PaymentResultPage() {
     return () => {
       cancelled = true;
     };
-  }, [pending, setCart]);
+  }, [pending, setCart, t]);
 
   const successful =
     order?.paymentStatus === "cod_confirmed" || order?.paymentStatus === "paid";
@@ -110,17 +112,17 @@ export default function PaymentResultPage() {
         </div>
       )}
 
-      <h1 className="text-xl font-semibold">Kết quả thanh toán</h1>
+      <h1 className="text-xl font-semibold">{t("paymentResult", "title")}</h1>
       <p className="mt-3 max-w-sm text-sm text-subtitle">{message}</p>
 
       {order && (
         <div className="mt-5 w-full max-w-sm rounded-lg bg-section p-4 text-left text-sm">
           <div className="flex justify-between gap-4">
-            <span>Mã đơn</span>
+            <span>{t("paymentResult", "orderCode")}</span>
             <span className="font-medium">{order.code}</span>
           </div>
           <div className="mt-2 flex justify-between gap-4">
-            <span>Trạng thái</span>
+            <span>{t("paymentResult", "status")}</span>
             <span className="font-medium">{order.paymentStatus}</span>
           </div>
         </div>
@@ -128,10 +130,10 @@ export default function PaymentResultPage() {
 
       <div className="mt-6 flex w-full max-w-sm gap-3">
         <Button className="flex-1" variant="tertiary" onClick={() => navigate("/")}> 
-          Trang chủ
+          {t("navigation", "home")}
         </Button>
         <Button className="flex-1" onClick={() => navigate("/orders/pending")}> 
-          Đơn hàng
+          {t("navigation", "orders")}
         </Button>
       </div>
     </div>

@@ -3,35 +3,41 @@ import { useAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Input } from "zmp-ui";
-import { InputProps } from "zmp-ui/input";
+import type { InputProps, InputRef } from "zmp-ui/input";
+import { useTranslation } from "@/hooks/use-translation";
 
 const SearchBar = (props: InputProps) => {
   const [localKeyword, setLocalKeyword] = useState("");
-  const [keyword, setKeyword] = useAtom(keywordState);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [, setKeyword] = useAtom(keywordState);
+  const inputRef = useRef<InputRef>(null);
   const location = useLocation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (location.pathname === "/search" && inputRef.current) {
-      inputRef.current.focus();
+      inputRef.current.input?.focus();
     }
+
     return () => {
       setKeyword("");
     };
-  }, [location]);
+  }, [location.pathname, setKeyword]);
 
   return (
     <Input.Search
+      ref={inputRef}
       size="small"
-      placeholder="Bạn muốn mua gì..."
-      className="border-none outline-none m-0"
+      placeholder={t("header", "searchPlaceholder")}
+      className="m-0 border-none outline-none"
       style={{
         viewTransitionName: "search-bar",
       }}
       value={localKeyword}
-      onChange={(e) => setLocalKeyword(e.currentTarget.value)}
-      onKeyUp={(e) => {
-        if (e.key === "Enter") {
+      onChange={(event) =>
+        setLocalKeyword(event.currentTarget.value)
+      }
+      onKeyUp={(event) => {
+        if (event.key === "Enter") {
           setKeyword(localKeyword);
         }
       }}

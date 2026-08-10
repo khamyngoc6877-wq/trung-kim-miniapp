@@ -4,15 +4,17 @@ import { Order } from "@/types";
 import { formatPrice } from "@/utils/format";
 import CollapsibleOrderItems from "./collapsible-order-items";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/use-translation";
 
 function OrderSummary(props: { order: Order; full?: boolean }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <Section
       title={
         <div className="w-full flex justify-between items-center space-x-2 font-normal">
           <span className="text-xs truncate">
-            Thời gian nhận: Từ 16h, 20/1/2025
+            {t("common", "receiveTime")}: {t("common", "receiveTimeValue")}
           </span>
           <span
             className={`text-xs ${
@@ -23,9 +25,9 @@ function OrderSummary(props: { order: Order; full?: boolean }) {
           >
             {
               {
-                pending: "Chờ xác nhận",
-                success: "Đã thanh toán",
-                failed: "Thanh toán thất bại",
+                pending: t("orders", "waiting"),
+                success: t("orders", "paid"),
+                failed: t("orders", "paymentFailed"),
               }[props.order.paymentStatus]
             }
           </span>
@@ -49,7 +51,7 @@ function OrderSummary(props: { order: Order; full?: boolean }) {
       </div>
       <HorizontalDivider />
       <div className="flex justify-between items-center px-4 py-2 space-x-4">
-        <div className="text-xs">Tổng tiền hàng</div>
+        <div className="text-xs">{t("orders", "totalGoods")}</div>
         <div className="text-sm font-medium">
           {formatPrice(props.order.total)}
         </div>

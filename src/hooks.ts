@@ -13,6 +13,7 @@ import { Product } from "@/types";
 import { getConfig } from "@/utils/template";
 import { authorize, createOrder, openChat } from "zmp-sdk/apis";
 import { useAtomCallback } from "jotai/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function useRealHeight(
   element: MutableRefObject<HTMLDivElement | null>,
@@ -59,6 +60,7 @@ export function useRequestInformation() {
 
 export function useAddToCart(product: Product) {
   const [cart, setCart] = useAtom(cartState);
+  const { t } = useTranslation();
 
   const currentCartItem = useMemo(
     () => cart.find((item) => item.product.id === product.id),
@@ -89,7 +91,7 @@ export function useAddToCart(product: Product) {
       return [...cart];
     });
     if (options?.toast) {
-      toast.success("Đã thêm vào giỏ hàng");
+      toast.success(t("product", "addedToCart"));
     }
   };
 
@@ -105,14 +107,16 @@ export function useCustomerSupport() {
 }
 
 export function useToBeImplemented() {
+  const { t } = useTranslation();
   return () =>
-    toast("Chức năng dành cho các bên tích hợp phát triển...", {
+    toast(t("misc", "featurePending"), {
       icon: "🛠️",
     });
 }
 
 export function useCheckout() {
   const { totalAmount } = useAtomValue(cartTotalState);
+  const { t } = useTranslation();
   const [cart, setCart] = useAtom(cartState);
   const requestInfo = useRequestInformation();
   const navigate = useNavigate();
@@ -123,7 +127,8 @@ export function useCheckout() {
       await requestInfo();
       await createOrder({
         amount: totalAmount,
-        desc: "Thanh toán đơn hàng",
+        mac: "",
+        desc: t("misc", "paymentDescription"),
         item: cart.map((item) => ({
           id: item.product.id,
           name: item.product.name,
@@ -136,14 +141,14 @@ export function useCheckout() {
       navigate("/orders", {
         viewTransition: true,
       });
-      toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
+      toast.success(t("misc", "legacyPaymentSuccess"), {
         icon: "🎉",
         duration: 5000,
       });
     } catch (error) {
       console.warn(error);
       toast.error(
-        "Thanh toán thất bại. Vui lòng kiểm tra nội dung lỗi bên trong Console."
+        t("misc", "legacyPaymentFailed")
       );
     }
   };
@@ -154,6 +159,7 @@ export function useRouteHandle() {
     undefined,
     | {
         title?: string | Function;
+        titleKey?: string;
         logo?: boolean;
         search?: boolean;
         noFooter?: boolean;

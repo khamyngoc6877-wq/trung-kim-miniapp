@@ -1,3 +1,4 @@
+import { translate } from "@/i18n/translate";
 import { Payment } from "zmp-sdk/apis";
 import type {
   CheckoutOrderResult,
@@ -27,7 +28,7 @@ type SignedPaymentData = {
 
 function ensureApiUrl(): void {
   if (!API_URL) {
-    throw new Error("Thiếu VITE_API_URL trong file .env của Mini App");
+    throw new Error(translate("errors", "missingApiUrl"));
   }
 }
 
@@ -54,17 +55,17 @@ async function requestJson<T>(
     response = await fetch(url, options);
   } catch (error) {
     console.error("Không thể kết nối backend", { url, error });
-    throw new Error(`Không thể kết nối máy chủ ${API_URL}`);
+    throw new Error(`${translate("errors", "backendConnection")} ${API_URL}`);
   }
 
   const result = await readJson<T & ApiError>(response);
   if (!response.ok) {
     throw new Error(
-      result?.message ?? result?.error ?? `Máy chủ trả lỗi ${response.status}`,
+      result?.message ?? result?.error ?? `${translate("errors", "serverError")} ${response.status}`,
     );
   }
   if (!result) {
-    throw new Error("Máy chủ không trả về JSON hợp lệ");
+    throw new Error(translate("errors", "invalidJson"));
   }
 
   return result;
@@ -79,7 +80,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function getOrderStatus(orderId: string): Promise<StoredOrder> {
-  if (!orderId.trim()) throw new Error("Thiếu mã đơn hàng");
+  if (!orderId.trim()) throw new Error(translate("errors", "missingOrderId"));
   return requestJson<StoredOrder>(
     `/api/orders/${encodeURIComponent(orderId)}?t=${Date.now()}`,
     { method: "GET", cache: "no-store" },
@@ -87,7 +88,7 @@ export async function getOrderStatus(orderId: string): Promise<StoredOrder> {
 }
 
 async function getSignedPaymentData(orderId: string): Promise<SignedPaymentData> {
-  if (!orderId.trim()) throw new Error("Thiếu mã đơn hàng nội bộ");
+  if (!orderId.trim()) throw new Error(translate("errors", "missingMerchantOrderId"));
 
   const result = await postJson<SignedPaymentData>(
     "/api/payments/create-signature",
@@ -95,13 +96,13 @@ async function getSignedPaymentData(orderId: string): Promise<SignedPaymentData>
   );
 
   if (!Number.isFinite(result.amount) || result.amount <= 0) {
-    throw new Error("Backend trả amount không hợp lệ");
+    throw new Error(translate("errors", "invalidAmount"));
   }
   if (!Array.isArray(result.item) || result.item.length === 0) {
-    throw new Error("Backend trả item không hợp lệ");
+    throw new Error(translate("errors", "invalidItems"));
   }
   if (!result.desc || !result.extradata || !result.method || !result.mac) {
-    throw new Error("Backend trả dữ liệu ký không đầy đủ");
+    throw new Error(translate("errors", "incompleteSignature"));
   }
 
   return result;
@@ -135,7 +136,7 @@ function normalizeSdkError(error: unknown): Error {
     );
   }
 
-  return new Error(String(error || "Checkout SDK thất bại"));
+  return new Error(String(error || translate("errors", "checkoutFailed")));
 }
 
 export function readPendingPayment(): PendingPayment | null {
@@ -196,7 +197,7 @@ export async function createCheckoutPayment(
 
     if (!checkoutOrderId) {
       throw new Error(
-        "Checkout SDK không trả về orderId. Hãy thử trong ứng dụng Zalo và kiểm tra cấu hình phương thức thanh toán.",
+        translate("errors", "noCheckoutOrderId"),
       );
     }
 

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { useAtom, useAtomValue } from "jotai";
 import HorizontalDivider from "@/components/horizontal-divider";
 import Section from "@/components/section";
 import { StationSkeleton } from "@/components/skeleton";
@@ -14,24 +16,26 @@ import {
   deliveryModeState,
   selectedStationState,
   shippingAddressState,
-} from "@/state";
-import { useAtom, useAtomValue } from "jotai";
-import { Suspense } from "react";
+} from "@/state/shipping";
+import { useTranslation } from "@/hooks/use-translation";
 import DeliverySummary from "./delivery-summary";
 
 function ShippingAddressSummary() {
   const shippingAddress = useAtomValue(shippingAddressState);
+  const { t } = useTranslation();
 
-  if (!shippingAddress) {
+  if (!shippingAddress || !shippingAddress.address?.trim()) {
     return (
       <TransitionLink
-        className="flex flex-col space-y-2 justify-center items-center p-4 w-full"
+        className="flex w-full flex-col items-center justify-center space-y-2 p-4"
         to="/shipping-address"
       >
         <LocationMarkerPackageIcon />
-        <div className="flex space-x-1 items-center text-center p-2">
+        <div className="flex items-center space-x-1 p-2 text-center">
           <PlusIcon width={16} height={16} />
-          <span className="text-sm font-medium">Thêm địa chỉ nhận hàng</span>
+          <span className="text-sm font-medium">
+            {t("cart", "addAddress")}
+          </span>
         </div>
       </TransitionLink>
     );
@@ -40,8 +44,12 @@ function ShippingAddressSummary() {
   return (
     <DeliverySummary
       icon={<LocationMarkerLineIcon />}
-      title="Địa chỉ nhận hàng"
-      subtitle={shippingAddress.alias}
+      title={t("cart", "shippingAddress")}
+      subtitle={
+        shippingAddress.alias?.trim() ||
+        shippingAddress.name?.trim() ||
+        t("cart", "shippingAddress")
+      }
       description={shippingAddress.address}
       linkTo="/shipping-address"
     />
@@ -50,10 +58,12 @@ function ShippingAddressSummary() {
 
 function SelectedStationSummary() {
   const selectedStation = useAtomValue(selectedStationState);
+  const { t } = useTranslation();
+
   return (
     <DeliverySummary
       icon={<HomeIcon />}
-      title="Nhận hàng tại"
+      title={t("cart", "receiveAt")}
       subtitle={selectedStation.name}
       description={selectedStation.address}
       linkTo="/stations"
@@ -61,34 +71,36 @@ function SelectedStationSummary() {
   );
 }
 
-function Delivery() {
+export default function Delivery() {
   const [selectedDeliveryMode, setSelectedDeliveryMode] =
     useAtom(deliveryModeState);
+  const { t } = useTranslation();
+
+  const options = [
+    {
+      type: "shipping" as const,
+      name: t("cart", "delivery"),
+      icon: <ShipperIcon />,
+    },
+    {
+      type: "pickup" as const,
+      name: t("cart", "pickup"),
+      icon: <PackageDeliveryIcon />,
+    },
+  ];
 
   return (
-    <Section title="Hình thức giao hàng" className="rounded-lg">
+    <Section title={t("cart", "shippingMethod")} className="rounded-lg">
       <div className="grid grid-cols-2 gap-4 p-4 pt-2">
-        {(
-          [
-            {
-              type: "shipping",
-              name: "Giao tận nơi",
-              icon: <ShipperIcon />,
-            },
-            {
-              type: "pickup",
-              name: "Tự đến lấy",
-              icon: <PackageDeliveryIcon />,
-            },
-          ] as const
-        ).map((option) => (
+        {options.map((option) => (
           <button
             key={option.type}
-            className={"flex justify-center items-center space-x-2 text-base font-medium bg-background rounded-full h-12 px-3.5 ".concat(
+            type="button"
+            className={`flex h-12 items-center justify-center space-x-2 rounded-full bg-background px-3.5 text-base font-medium ${
               selectedDeliveryMode === option.type
                 ? "border border-primary text-primary"
                 : ""
-            )}
+            }`}
             onClick={() => setSelectedDeliveryMode(option.type)}
           >
             {option.icon}
@@ -96,7 +108,9 @@ function Delivery() {
           </button>
         ))}
       </div>
+
       <HorizontalDivider />
+
       {selectedDeliveryMode === "shipping" ? (
         <ShippingAddressSummary />
       ) : (
@@ -107,5 +121,3 @@ function Delivery() {
     </Section>
   );
 }
-
-export default Delivery;

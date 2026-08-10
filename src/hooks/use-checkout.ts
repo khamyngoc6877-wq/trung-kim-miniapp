@@ -1,3 +1,4 @@
+import { translate } from "@/i18n/translate";
 import { createCheckoutPayment } from "@/services/payment.service";
 import type { PaymentMethod } from "@/types/payment";
 
@@ -27,7 +28,7 @@ type MerchantOrder = {
 };
 
 async function createMerchantOrder(input: CheckoutInput): Promise<MerchantOrder> {
-  if (!API_URL) throw new Error("Thiếu VITE_API_URL");
+  if (!API_URL) throw new Error(translate("errors", "missingApiUrl"));
 
   let response: Response;
   try {
@@ -38,7 +39,7 @@ async function createMerchantOrder(input: CheckoutInput): Promise<MerchantOrder>
     });
   } catch (error) {
     console.error("Create merchant order network error", error);
-    throw new Error(`Không thể kết nối máy chủ ${API_URL}`);
+    throw new Error(`${translate("errors", "backendConnection")} ${API_URL}`);
   }
 
   const result = (await response.json().catch(() => null)) as
@@ -46,10 +47,10 @@ async function createMerchantOrder(input: CheckoutInput): Promise<MerchantOrder>
     | null;
 
   if (!response.ok) {
-    throw new Error(result?.message ?? `Không thể tạo đơn hàng (${response.status})`);
+    throw new Error(result?.message ?? `${translate("errors", "createOrderFailed")} (${response.status})`);
   }
   if (!result?.orderId) {
-    throw new Error("Backend không trả orderId nội bộ");
+    throw new Error(translate("errors", "backendNoOrderId"));
   }
 
   return result;

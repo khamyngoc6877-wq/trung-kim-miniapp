@@ -9,6 +9,7 @@ import {
 } from "zmp-sdk/apis";
 
 import { cartState } from "@/state";
+import { useTranslation } from "@/hooks/use-translation";
 
 type TransactionResult = {
   orderId?: string;
@@ -24,6 +25,7 @@ const REDIRECT_PATH = "/payment-result";
 export default function PaymentResultListener() {
   const navigate = useNavigate();
   const setCart = useSetAtom(cartState);
+  const { t } = useTranslation();
 
   const processResult = useCallback(
     (result: TransactionResult) => {
@@ -32,13 +34,12 @@ export default function PaymentResultListener() {
       const resultCode = Number(result?.resultCode);
 
       if (resultCode === 1) {
-        // Chỉ xóa giỏ khi Zalo xác nhận giao dịch thành công
         setCart([]);
 
         sessionStorage.removeItem("pendingPayment");
         sessionStorage.removeItem("pendingMerchantOrderId");
 
-        toast.success("Đặt hàng thành công");
+        toast.success(t("paymentResult", "success"));
 
         navigate(
           `/payment-result?status=success&orderId=${encodeURIComponent(
@@ -51,7 +52,7 @@ export default function PaymentResultListener() {
       }
 
       if (resultCode === 0) {
-        toast("Đơn hàng đang được xử lý");
+        toast(t("paymentResult", "pending"));
 
         navigate("/payment-result?status=pending", {
           replace: true,
@@ -61,25 +62,21 @@ export default function PaymentResultListener() {
       }
 
       if (resultCode === -2) {
-        toast("Bạn chưa hoàn tất xác nhận thanh toán");
+        toast(t("paymentResult", "notCompleted"));
         return;
       }
 
       toast.error(
-        result?.msg || "Đặt hàng không thành công",
+        result?.msg || t("paymentResult", "failed"),
       );
 
       navigate("/payment-result?status=failed", {
         replace: true,
       });
     },
-    [navigate, setCart],
+    [navigate, setCart, t],
   );
 
-  /**
-   * Cách chính dành cho SDK mới:
-   * PaymentDone → checkTransaction → xử lý resultCode.
-   */
   const handlePaymentDone = useCallback(
     async (data: unknown) => {
       console.log("PAYMENT_DONE EVENT:", data);
@@ -87,7 +84,7 @@ export default function PaymentResultListener() {
       try {
         const result =
           (await CheckoutSDK.checkTransaction({
-            data,
+            data: data as string | Record<string, string | null | undefined>,
           })) as TransactionResult;
 
         processResult(result);
@@ -98,20 +95,22 @@ export default function PaymentResultListener() {
         );
 
         toast.error(
-          "Không thể kiểm tra kết quả đặt hàng",
+          t("paymentResult", "checkFailed"),
         );
       }
     },
-    [processResult],
+    [processResult, t],
   );
 
-  /**
-   * Phương án dự phòng:
-   * Checkout chuyển về Redirect Path và phát OpenApp.
-   */
   const handleOpenApp = useCallback(
-    async (data: any) => {
-      const path = String(data?.path ?? "");
+    async (data: unknown) => {
+      const openAppData = data as {
+        path?: string;
+      };
+
+      const path = String(
+        openAppData?.path ?? "",
+      );
 
       console.log("OPEN_APP EVENT:", {
         data,
@@ -136,11 +135,11 @@ export default function PaymentResultListener() {
         );
 
         toast.error(
-          "Không thể đọc kết quả đặt hàng",
+          t("paymentResult", "readFailed"),
         );
       }
     },
-    [processResult],
+    [processResult, t],
   );
 
   useEffect(() => {

@@ -1,8 +1,10 @@
 import Barcode from "./barcode";
 import barcodeIllusLeft from "@/static/barcode-illus-left.svg";
 import barcodeIllusRight from "@/static/barcode-illus-right.svg";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function Points() {
+  const { t } = useTranslation();
   return (
     <div
       className="rounded-lg bg-primary text-white p-8 pt-6 bg-cover text-center"
@@ -13,11 +15,11 @@ export default function Points() {
         backgroundSize: "auto, auto",
       }}
     >
-      <div className="text-xl font-medium opacity-95">20 điểm</div>
-      <div className="opacity-95 text-2xs">HSD: 02/12/2024</div>
+      <div className="text-xl font-medium opacity-95">{t("profile", "points")}</div>
+      <div className="opacity-95 text-2xs">{t("profile", "expiry")}</div>
       <div className="bg-white rounded-lg mt-2 py-2.5 space-y-2.5 flex flex-col items-center">
         <div className="text-2xs text-subtitle text-center">
-          Quét mã để tích điểm
+          {t("profile", "scanPoints")}
         </div>
         <Barcode />
       </div>

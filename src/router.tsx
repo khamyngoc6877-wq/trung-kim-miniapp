@@ -33,7 +33,7 @@ const router = createBrowserRouter(
           path: "/categories",
           element: <CategoryListPage />,
           handle: {
-            title: "Danh mục",
+            titleKey: "categories",
             noBack: true,
           },
         },
@@ -41,21 +41,21 @@ const router = createBrowserRouter(
           path: "/orders/:status?",
           element: <OrdersPage />,
           handle: {
-            title: "Đơn hàng",
+            titleKey: "orders",
           },
         },
         {
           path: "/order/:id",
           element: <OrderDetailPage />,
           handle: {
-            title: "Thông tin đơn hàng",
+            titleKey: "orderDetail",
           },
         },
         {
           path: "/cart",
           element: <CartPage />,
           handle: {
-            title: "Giỏ hàng",
+            titleKey: "cart",
             noBack: true,
             noFloatingCart: true,
           },
@@ -64,7 +64,7 @@ const router = createBrowserRouter(
           path: "/payment-result",
           element: <PaymentResultPage />,
           handle: {
-            title: "Kết quả thanh toán",
+            titleKey: "paymentResult",
             noFooter: true,
             noFloatingCart: true,
           },
@@ -73,7 +73,7 @@ const router = createBrowserRouter(
           path: "/shipping-address",
           element: <ShippingAddressPage />,
           handle: {
-            title: "Địa chỉ nhận hàng",
+            titleKey: "shippingAddress",
             noFooter: true,
             noFloatingCart: true,
           },
@@ -82,7 +82,7 @@ const router = createBrowserRouter(
           path: "/stations",
           element: <StationsPage />,
           handle: {
-            title: "Điểm nhận hàng",
+            titleKey: "stations",
             noFooter: true,
           },
         },
@@ -97,7 +97,7 @@ const router = createBrowserRouter(
           path: "/profile/edit",
           element: <ProfileEditorPage />,
           handle: {
-            title: "Thông tin tài khoản",
+            titleKey: "profileEditor",
             noFooter: true,
             noFloatingCart: true,
           },
@@ -124,7 +124,7 @@ const router = createBrowserRouter(
           element: <SearchPage />,
           handle: {
             search: true,
-            title: "Tìm kiếm",
+            titleKey: "search",
             noFooter: true,
           },
         },

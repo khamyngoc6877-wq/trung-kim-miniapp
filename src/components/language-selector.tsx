@@ -1,5 +1,9 @@
 import { useAtom } from "jotai";
-import { languageState, type Language } from "@/state";
+import {
+  languageState,
+  type Language,
+} from "@/state/language";
+import { useTranslation } from "@/hooks/use-translation";
 
 const languages: Array<{
   value: Language;
@@ -13,6 +17,7 @@ const languages: Array<{
 export default function LanguageSelector() {
   const [language, setLanguage] =
     useAtom(languageState);
+  const { t } = useTranslation();
 
   return (
     <select
@@ -23,7 +28,7 @@ export default function LanguageSelector() {
         )
       }
       className="rounded border border-white/50 bg-transparent px-2 py-1 text-sm text-white"
-      aria-label="Chọn ngôn ngữ"
+      aria-label={t("common", "language")}
     >
       {languages.map((item) => (
         <option

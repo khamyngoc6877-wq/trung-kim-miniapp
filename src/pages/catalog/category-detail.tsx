@@ -10,7 +10,7 @@ import { useParams } from "react-router-dom";
 
 function ProductList() {
   const { id } = useParams();
-  const products = useAtomValue(productsByCategoryState(id));
+  const products = useAtomValue(productsByCategoryState(id ?? ""));
 
   if (!products.length) {
     return <EmptyCategory />;

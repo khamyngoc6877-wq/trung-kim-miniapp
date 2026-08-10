@@ -7,11 +7,13 @@ import { useAtom } from "jotai";
 import { selectedCartItemIdsState } from "@/state";
 import { useEffect, useState } from "react";
 import { Icon } from "zmp-ui";
+import { useTranslation } from "@/hooks/use-translation";
 
 const SWIPE_TO_DELTE_OFFSET = 80;
 
 export default function CartItem(props: CartItemProps) {
   const [quantity, setQuantity] = useState(props.quantity);
+  const { t } = useTranslation();
   const { addToCart } = useAddToCart(props.product);
 
   const [selectedItemIds, setSelectedItemIds] = useAtom(
@@ -54,7 +56,7 @@ export default function CartItem(props: CartItemProps) {
           onClick={() => addToCart(0)}
         >
           <Icon icon="zi-delete" />
-          <div className="text-2xs font-medium">Xoá</div>
+          <div className="text-2xs font-medium">{t("common", "delete")}</div>
         </div>
       </div>
 

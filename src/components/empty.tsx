@@ -1,44 +1,57 @@
-import { EmptyBoxIcon, EmptyCartIcon, SearchIconLarge } from "./vectors";
+import { useTranslation } from "@/hooks/use-translation";
+import {
+  EmptyBoxIcon,
+  EmptyCartIcon,
+  SearchIconLarge,
+} from "./vectors";
 
 export function EmptySearchResult() {
+  const { t } = useTranslation();
+
   return (
-    <div className="flex-1 p-6 space-y-4 flex flex-col items-center justify-center">
+    <div className="flex flex-1 flex-col items-center justify-center space-y-4 p-6">
       <SearchIconLarge />
-      <div className="text-inactive text-center text-2xs">
-        Không có sản phẩm bạn tìm kiếm
+      <div className="text-center text-2xs text-inactive">
+        {t("empty", "search")}
       </div>
     </div>
   );
 }
 
 export function EmptyCategory() {
+  const { t } = useTranslation();
+
   return (
-    <div className="h-full flex-1 p-6 space-y-4 flex flex-col items-center justify-center">
+    <div className="flex h-full flex-1 flex-col items-center justify-center space-y-4 p-6">
       <EmptyBoxIcon />
-      <div className="text-inactive text-center text-2xs">
-        Không có sản phẩm trong danh mục này
+      <div className="text-center text-2xs text-inactive">
+        {t("empty", "category")}
       </div>
     </div>
   );
 }
 
 export function EmptyOrder() {
+  const { t } = useTranslation();
+
   return (
-    <div className="h-full flex-1 p-6 space-y-4 flex flex-col items-center justify-center">
+    <div className="flex h-full flex-1 flex-col items-center justify-center space-y-4 p-6">
       <EmptyBoxIcon />
-      <div className="text-inactive text-center text-2xs">
-        Hiện tại bạn chưa có đơn hàng nào
+      <div className="text-center text-2xs text-inactive">
+        {t("empty", "order")}
       </div>
     </div>
   );
 }
 
 export function EmptyCart() {
+  const { t } = useTranslation();
+
   return (
-    <div className="h-full flex-1 p-6 space-y-4 flex flex-col items-center justify-center">
+    <div className="flex h-full flex-1 flex-col items-center justify-center space-y-4 p-6">
       <EmptyCartIcon />
-      <div className="text-inactive text-center text-2xs">
-        Không có sản phẩm trong giỏ hàng
+      <div className="text-center text-2xs text-inactive">
+        {t("empty", "cart")}
       </div>
     </div>
   );

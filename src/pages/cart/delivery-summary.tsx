@@ -1,6 +1,7 @@
 import TransitionLink from "@/components/transition-link";
 import { ReactNode } from "react";
 import { List } from "zmp-ui";
+import { useTranslation } from "@/hooks/use-translation";
 
 function DeliverySummary(props: {
   icon: ReactNode;
@@ -9,13 +10,14 @@ function DeliverySummary(props: {
   description?: string;
   linkTo?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <List.Item
       prefix={props.icon}
       suffix={
         props.linkTo && (
           <TransitionLink to={props.linkTo} className="text-xs text-primary">
-            Thay đổi
+            {t("common", "change")}
           </TransitionLink>
         )
       }
