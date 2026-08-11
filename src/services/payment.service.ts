@@ -10,7 +10,9 @@ import type {
 
 export const PENDING_PAYMENT_KEY = "trung-kim.pending-payment";
 
-const API_URL = String(import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const API_URL = String(
+  import.meta.env.VITE_API_URL ?? "",
+).replace(/\/$/, "");
 
 type ApiError = {
   message?: string;
@@ -28,13 +30,20 @@ type SignedPaymentData = {
 
 function ensureApiUrl(): void {
   if (!API_URL) {
-    throw new Error(translate("errors", "missingApiUrl"));
+    throw new Error(
+      translate("errors", "missingApiUrl"),
+    );
   }
 }
 
-async function readJson<T>(response: Response): Promise<T | null> {
+async function readJson<T>(
+  response: Response,
+): Promise<T | null> {
   const text = await response.text();
-  if (!text) return null;
+
+  if (!text) {
+    return null;
+  }
 
   try {
     return JSON.parse(text) as T;
@@ -48,61 +57,161 @@ async function requestJson<T>(
   options: RequestInit = {},
 ): Promise<T> {
   ensureApiUrl();
+
   const url = `${API_URL}${path}`;
 
   let response: Response;
-  try {
-    response = await fetch(url, options);
-  } catch (error) {
-    console.error("Không thể kết nối backend", { url, error });
-    throw new Error(`${translate("errors", "backendConnection")} ${API_URL}`);
-  }
 
-  const result = await readJson<T & ApiError>(response);
-  if (!response.ok) {
+  try {
+    response = await fetch(
+      url,
+      options,
+    );
+  } catch (error) {
+    console.error(
+      "Không thể kết nối backend",
+      {
+        url,
+        error,
+      },
+    );
+
     throw new Error(
-      result?.message ?? result?.error ?? `${translate("errors", "serverError")} ${response.status}`,
+      `${translate(
+        "errors",
+        "backendConnection",
+      )} ${API_URL}`,
     );
   }
+
+  const result =
+    await readJson<T & ApiError>(
+      response,
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      result?.message ??
+        result?.error ??
+        `${translate(
+          "errors",
+          "serverError",
+        )} ${response.status}`,
+    );
+  }
+
   if (!result) {
-    throw new Error(translate("errors", "invalidJson"));
+    throw new Error(
+      translate(
+        "errors",
+        "invalidJson",
+      ),
+    );
   }
 
   return result;
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  return requestJson<T>(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+async function postJson<T>(
+  path: string,
+  body: unknown,
+): Promise<T> {
+  return requestJson<T>(
+    path,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
 }
 
-export async function getOrderStatus(orderId: string): Promise<StoredOrder> {
-  if (!orderId.trim()) throw new Error(translate("errors", "missingOrderId"));
+export async function getOrderStatus(
+  orderId: string,
+): Promise<StoredOrder> {
+  if (!orderId.trim()) {
+    throw new Error(
+      translate(
+        "errors",
+        "missingOrderId",
+      ),
+    );
+  }
+
   return requestJson<StoredOrder>(
-    `/api/orders/${encodeURIComponent(orderId)}?t=${Date.now()}`,
-    { method: "GET", cache: "no-store" },
+    `/api/orders/${encodeURIComponent(
+      orderId,
+    )}?t=${Date.now()}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
   );
 }
 
-async function getSignedPaymentData(orderId: string): Promise<SignedPaymentData> {
-  if (!orderId.trim()) throw new Error(translate("errors", "missingMerchantOrderId"));
-
-  const result = await postJson<SignedPaymentData>(
-    "/api/payments/create-signature",
-    { orderId },
-  );
-
-  if (!Number.isFinite(result.amount) || result.amount <= 0) {
-    throw new Error(translate("errors", "invalidAmount"));
+async function getSignedPaymentData(
+  orderId: string,
+): Promise<SignedPaymentData> {
+  if (!orderId.trim()) {
+    throw new Error(
+      translate(
+        "errors",
+        "missingMerchantOrderId",
+      ),
+    );
   }
-  if (!Array.isArray(result.item) || result.item.length === 0) {
-    throw new Error(translate("errors", "invalidItems"));
+
+  const result =
+    await postJson<SignedPaymentData>(
+      "/api/payments/create-signature",
+      {
+        orderId,
+      },
+    );
+
+  if (
+    !Number.isFinite(
+      result.amount,
+    ) ||
+    result.amount <= 0
+  ) {
+    throw new Error(
+      translate(
+        "errors",
+        "invalidAmount",
+      ),
+    );
   }
-  if (!result.desc || !result.extradata || !result.method || !result.mac) {
-    throw new Error(translate("errors", "incompleteSignature"));
+
+  if (
+    !Array.isArray(
+      result.item,
+    ) ||
+    result.item.length === 0
+  ) {
+    throw new Error(
+      translate(
+        "errors",
+        "invalidItems",
+      ),
+    );
+  }
+
+  if (
+    !result.desc ||
+    !result.extradata ||
+    !result.method ||
+    !result.mac
+  ) {
+    throw new Error(
+      translate(
+        "errors",
+        "incompleteSignature",
+      ),
+    );
   }
 
   return result;
@@ -112,51 +221,103 @@ async function bindCheckoutOrder(
   merchantOrderId: string,
   checkoutOrderId: string,
 ): Promise<void> {
-  await postJson<{ success: boolean }>(
+  await postJson<{
+    success: boolean;
+  }>(
     "/api/payments/bind-checkout-order",
-    { merchantOrderId, checkoutOrderId },
+    {
+      merchantOrderId,
+      checkoutOrderId,
+    },
   );
 }
 
-function normalizeSdkError(error: unknown): Error {
-  if (error instanceof Error) return error;
+function normalizeSdkError(
+  error: unknown,
+): Error {
+  if (
+    error instanceof Error
+  ) {
+    return error;
+  }
 
-  if (typeof error === "object" && error) {
-    const value = error as {
-      message?: string;
-      errorMessage?: string;
-      code?: string | number;
-      errCode?: string | number;
-    };
-    const code = value.code ?? value.errCode;
+  if (
+    typeof error === "object" &&
+    error
+  ) {
+    const value =
+      error as {
+        message?: string;
+        errorMessage?: string;
+        code?: string | number;
+        errCode?: string | number;
+      };
+
+    const code =
+      value.code ??
+      value.errCode;
+
     return new Error(
       value.message ??
         value.errorMessage ??
-        `Checkout SDK thất bại${code !== undefined ? ` (${code})` : ""}`,
+        `Checkout SDK thất bại${
+          code !== undefined
+            ? ` (${code})`
+            : ""
+        }`,
     );
   }
 
-  return new Error(String(error || translate("errors", "checkoutFailed")));
+  return new Error(
+    String(
+      error ||
+        translate(
+          "errors",
+          "checkoutFailed",
+        ),
+    ),
+  );
 }
 
-export function readPendingPayment(): PendingPayment | null {
-  const raw = sessionStorage.getItem(PENDING_PAYMENT_KEY);
-  if (!raw) return null;
+export function readPendingPayment():
+  | PendingPayment
+  | null {
+  const raw =
+    sessionStorage.getItem(
+      PENDING_PAYMENT_KEY,
+    );
+
+  if (!raw) {
+    return null;
+  }
 
   try {
-    return JSON.parse(raw) as PendingPayment;
+    return JSON.parse(
+      raw,
+    ) as PendingPayment;
   } catch {
-    sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+    sessionStorage.removeItem(
+      PENDING_PAYMENT_KEY,
+    );
+
     return null;
   }
 }
 
-export function savePendingPayment(value: PendingPayment): void {
-  sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(value));
+export function savePendingPayment(
+  value: PendingPayment,
+): void {
+  sessionStorage.setItem(
+    PENDING_PAYMENT_KEY,
+    JSON.stringify(value),
+  );
 }
 
-export function clearPendingPayment(): void {
-  sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+export function clearPendingPayment():
+  void {
+  sessionStorage.removeItem(
+    PENDING_PAYMENT_KEY,
+  );
 }
 
 export async function createCheckoutPayment(
@@ -168,46 +329,138 @@ export async function createCheckoutPayment(
     paymentMethod,
     createdAt: Date.now(),
   };
-  savePendingPayment(pending);
+
+  /*
+   * Lưu merchant order trước khi mở Checkout.
+   * PaymentResultListener sẽ dùng giá trị này
+   * nếu Checkout SDK không trả orderId.
+   */
+  savePendingPayment(
+    pending,
+  );
 
   try {
-    const signedData = await getSignedPaymentData(merchantOrderId);
+    const signedData =
+      await getSignedPaymentData(
+        merchantOrderId,
+      );
 
-    console.log("Checkout request", {
-      merchantOrderId,
-      paymentMethod,
-      amount: signedData.amount,
-      method: signedData.method,
-      itemCount: signedData.item.length,
-      hasMac: Boolean(signedData.mac),
-      macLength: signedData.mac.length,
-    });
+    console.log(
+      "Checkout request",
+      {
+        merchantOrderId,
+        paymentMethod,
+        amount:
+          signedData.amount,
+        method:
+          signedData.method,
+        itemCount:
+          signedData.item.length,
+        hasMac:
+          Boolean(
+            signedData.mac,
+          ),
+        macLength:
+          signedData.mac.length,
+      },
+    );
 
-    const rawResult = await Payment.createOrder({
-      amount: signedData.amount,
-      desc: signedData.desc,
-      item: signedData.item,
-      extradata: signedData.extradata,
-      method: signedData.method,
-      mac: signedData.mac,
-    });
+    const rawResult =
+      await Payment.createOrder({
+        amount:
+          signedData.amount,
+        desc:
+          signedData.desc,
+        item:
+          signedData.item,
+        extradata:
+          signedData.extradata,
+        method:
+          signedData.method,
+        mac:
+          signedData.mac,
+      });
 
-    const result = rawResult as { orderId?: string } | null | undefined;
-    const checkoutOrderId = String(result?.orderId ?? "").trim();
+    console.log(
+      "Payment.createOrder result:",
+      rawResult,
+    );
 
-    if (!checkoutOrderId) {
-      throw new Error(
-        translate("errors", "noCheckoutOrderId"),
+    /*
+     * Không bắt buộc createOrder
+     * phải trả orderId.
+     */
+    const result =
+      rawResult as
+        | {
+            orderId?: string;
+            zmpOrderId?: string;
+          }
+        | null
+        | undefined;
+
+    const checkoutOrderId =
+      String(
+        result?.orderId ??
+          result?.zmpOrderId ??
+          "",
+      ).trim();
+
+    /*
+     * Nếu SDK có trả Checkout orderId
+     * thì lưu và bind với merchant order.
+     */
+    if (checkoutOrderId) {
+      savePendingPayment({
+        ...pending,
+        checkoutOrderId,
+      });
+
+      try {
+        await bindCheckoutOrder(
+          merchantOrderId,
+          checkoutOrderId,
+        );
+      } catch (bindError) {
+        /*
+         * Không biến Checkout đã mở
+         * thành thất bại chỉ vì bind lỗi.
+         */
+        console.error(
+          "Bind checkout order failed:",
+          bindError,
+        );
+      }
+    } else {
+      /*
+       * Giữ pending payment để
+       * PaymentDone/checkTransaction
+       * tiếp tục xử lý.
+       */
+      console.warn(
+        "Checkout SDK không trả orderId. " +
+          "Tiếp tục chờ PaymentDone/checkTransaction.",
       );
     }
 
-    savePendingPayment({ ...pending, checkoutOrderId });
-    await bindCheckoutOrder(merchantOrderId, checkoutOrderId);
-
-    return { orderId: checkoutOrderId };
+    return {
+      orderId:
+        checkoutOrderId,
+    };
   } catch (error) {
+    /*
+     * Chỉ xóa pending khi
+     * Payment.createOrder thực sự lỗi.
+     */
     clearPendingPayment();
-    console.error("Payment.createOrder failed", error);
-    throw normalizeSdkError(error);
+
+    console.error(
+      "Payment.createOrder failed",
+      error,
+    );
+
+    throw normalizeSdkError(
+      error,
+    );
   }
 }
