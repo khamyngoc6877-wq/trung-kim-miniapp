@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import { Button, Spinner } from "zmp-ui";
 import {
@@ -20,9 +20,21 @@ function wait(ms: number): Promise<void> {
 
 export default function PaymentResultPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const setCart = useSetAtom(cartState);
   const pending = useMemo(() => readPendingPayment(), []);
+
+  // Query param là fallback quan trọng nếu trang được mở lại sau redirect.
+  const merchantOrderId = useMemo(
+    () =>
+      String(
+        searchParams.get("merchantOrderId") ?? pending?.merchantOrderId ?? "",
+      ).trim(),
+    [pending?.merchantOrderId, searchParams],
+  );
+
+  const requestedStatus = searchParams.get("status") ?? "pending";
   const [order, setOrder] = useState<StoredOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(t("paymentResult", "confirming"));
@@ -31,7 +43,7 @@ export default function PaymentResultPage() {
     let cancelled = false;
 
     async function checkResult() {
-      if (!pending?.merchantOrderId) {
+      if (!merchantOrderId) {
         setLoading(false);
         setMessage(t("paymentResult", "missingPending"));
         return;
@@ -39,7 +51,8 @@ export default function PaymentResultPage() {
 
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
         try {
-          const result = await getOrderStatus(pending.merchantOrderId);
+          // Chỉ poll backend của ứng dụng, KHÔNG gọi CheckoutSDK ở trang này.
+          const result = await getOrderStatus(merchantOrderId);
           if (cancelled) return;
           setOrder(result);
 
@@ -66,7 +79,7 @@ export default function PaymentResultPage() {
             return;
           }
         } catch (error) {
-          console.warn(`Kiểm tra trạng thái lần ${attempt} thất bại`, error);
+          console.warn(`Kiểm tra trạng thái backend lần ${attempt} thất bại`, error);
         }
 
         if (attempt < MAX_ATTEMPTS) {
@@ -77,9 +90,11 @@ export default function PaymentResultPage() {
       if (!cancelled) {
         setLoading(false);
         setMessage(
-          pending.paymentMethod === "cash"
-            ? t("paymentResult", "codWaiting")
-            : t("paymentResult", "transactionPending"),
+          requestedStatus === "success"
+            ? t("paymentResult", "transactionPending")
+            : pending?.paymentMethod === "cash"
+              ? t("paymentResult", "codWaiting")
+              : t("paymentResult", "transactionPending"),
         );
       }
     }
@@ -88,11 +103,11 @@ export default function PaymentResultPage() {
     return () => {
       cancelled = true;
     };
-  }, [pending, setCart, t]);
+  }, [merchantOrderId, pending?.paymentMethod, requestedStatus, setCart, t]);
 
   const successful =
     order?.paymentStatus === "cod_confirmed" || order?.paymentStatus === "paid";
-  const failed = order?.paymentStatus === "failed";
+  const failed = order?.paymentStatus === "failed" || requestedStatus === "failed";
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
@@ -129,10 +144,10 @@ export default function PaymentResultPage() {
       )}
 
       <div className="mt-6 flex w-full max-w-sm gap-3">
-        <Button className="flex-1" variant="tertiary" onClick={() => navigate("/")}> 
+        <Button className="flex-1" variant="tertiary" onClick={() => navigate("/")}>
           {t("navigation", "home")}
         </Button>
-        <Button className="flex-1" onClick={() => navigate("/orders/pending")}> 
+        <Button className="flex-1" onClick={() => navigate("/orders/pending")}>
           {t("navigation", "orders")}
         </Button>
       </div>

@@ -386,67 +386,22 @@ export async function createCheckoutPayment(
       rawResult,
     );
 
-    /*
-     * Không bắt buộc createOrder
-     * phải trả orderId.
-     */
-    const result =
-      rawResult as
-        | {
-            orderId?: string;
-            zmpOrderId?: string;
-          }
-        | null
-        | undefined;
+    const checkoutOrderId = String(rawResult?.orderId ?? "").trim();
 
-    const checkoutOrderId =
-      String(
-        result?.orderId ??
-          result?.zmpOrderId ??
-          "",
-      ).trim();
-
-    /*
-     * Nếu SDK có trả Checkout orderId
-     * thì lưu và bind với merchant order.
-     */
-    if (checkoutOrderId) {
-      savePendingPayment({
-        ...pending,
-        checkoutOrderId,
-      });
-
-      try {
-        await bindCheckoutOrder(
-          merchantOrderId,
-          checkoutOrderId,
-        );
-      } catch (bindError) {
-        /*
-         * Không biến Checkout đã mở
-         * thành thất bại chỉ vì bind lỗi.
-         */
-        console.error(
-          "Bind checkout order failed:",
-          bindError,
-        );
-      }
-    } else {
-      /*
-       * Giữ pending payment để
-       * PaymentDone/checkTransaction
-       * tiếp tục xử lý.
-       */
-      console.warn(
-        "Checkout SDK không trả orderId. " +
-          "Tiếp tục chờ PaymentDone/checkTransaction.",
-      );
+    if (!checkoutOrderId) {
+      throw new Error(translate("errors", "noCheckoutOrderId"));
     }
 
-    return {
-      orderId:
-        checkoutOrderId,
-    };
+    // Lưu orderId ngay để PaymentDone luôn có khóa ổn định cho checkTransaction.
+    savePendingPayment({
+      ...pending,
+      checkoutOrderId,
+    });
+
+    // Bind phải hoàn tất để callback/notify từ Zalo tìm đúng merchant order.
+    await bindCheckoutOrder(merchantOrderId, checkoutOrderId);
+
+    return { orderId: checkoutOrderId };
   } catch (error) {
     /*
      * Chỉ xóa pending khi

@@ -1,14 +1,9 @@
 import { useMemo, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 import { Button, Radio, Sheet } from "zmp-ui";
 import { useCheckout } from "@/hooks/use-checkout";
 import { useTranslation } from "@/hooks/use-translation";
-import {
-  clearPendingPayment,
-  readPendingPayment,
-} from "@/services/payment.service";
 import { cartState, cartTotalState } from "@/state";
 import {
   deliveryModeState,
@@ -34,8 +29,6 @@ export default function Pay() {
 
   const checkout = useCheckout();
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const setCart = useSetAtom(cartState);
 
   const [paying, setPaying] = useState(false);
   const [showPaymentSheet, setShowPaymentSheet] = useState(false);
@@ -142,58 +135,17 @@ export default function Pay() {
       console.log("Checkout result:", result);
 
       /**
-       * COD:
-       * Sau khi checkout() hoàn thành, khách đã xác nhận đặt đơn COD.
-       * Xử lý thành công trực tiếp ở đây để không phụ thuộc hoàn toàn
-       * vào event PaymentDone/OpenApp của Checkout SDK.
+       * Không tự đánh dấu COD thành công tại đây. Payment.createOrder() chỉ
+       * tạo/mở Checkout. Kết quả cuối cùng phải đi qua PaymentDone ->
+       * CheckoutSDK.checkTransaction() để Zalo ghi nhận đúng luồng Checkout.
        */
-      if (paymentMethod === "cash") {
-        const pending = readPendingPayment();
+      setShowPaymentSheet(false);
 
-        const merchantOrderId = String(
-          pending?.merchantOrderId ??
-            result?.order?.orderId ??
-            "",
-        ).trim();
-
-        console.log("COD ORDER SUCCESS:", {
-          merchantOrderId,
-          result,
-        });
-
-        // Đóng Sheet thanh toán.
-        setShowPaymentSheet(false);
-
-        // Xóa giỏ hàng sau khi đơn COD đã được tạo.
-        setCart([]);
-
-        // Hiển thị thông báo thành công theo ngôn ngữ hiện tại.
-        toast.success(
-          t("paymentResult", "success"),
-        );
-
-        // Xóa trạng thái thanh toán chờ sau khi đã lấy merchantOrderId.
-        clearPendingPayment();
-
-        const params = new URLSearchParams();
-        params.set("status", "success");
-
-        if (merchantOrderId) {
-          params.set(
-            "merchantOrderId",
-            merchantOrderId,
-          );
-        }
-
-        navigate(
-          `/payment-result?${params.toString()}`,
-          {
-            replace: true,
-          },
-        );
-
-        return;
-      }
+      console.log("WAITING FOR CHECKOUT PAYMENT_DONE:", {
+        paymentMethod,
+        merchantOrderId: result.order.orderId,
+        checkoutOrderId: result.checkoutOrderId,
+      });
     } catch (error) {
       const message =
         error instanceof Error
