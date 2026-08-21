@@ -179,11 +179,17 @@ export async function paymentNotify(
           appId?: string;
           orderId?: string;
           method?: string;
+          extradata?: string;
+          [key: string]: unknown;
         }
       | undefined;
 
     const mac = String(
       req.body?.mac ?? "",
+    ).trim();
+
+    const overallMac = String(
+      req.body?.overallMac ?? "",
     ).trim();
 
     if (
@@ -217,10 +223,15 @@ export async function paymentNotify(
     }
 
     const valid = verifyNotifyMac({
-      appId: String(data.appId),
-      orderId: String(data.orderId),
-      method: String(data.method),
+      data: {
+        ...data,
+        appId: String(data.appId),
+        orderId: String(data.orderId),
+        method: String(data.method),
+        extradata: String(data.extradata ?? ""),
+      },
       receivedMac: mac,
+      receivedOverallMac: overallMac,
       privateKey,
     });
 
