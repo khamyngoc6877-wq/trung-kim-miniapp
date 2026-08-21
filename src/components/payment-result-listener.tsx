@@ -16,16 +16,36 @@ type TransactionResult = {
   createdAt?: string;
 };
 
+const CHECK_LOCK_PREFIX = "trung-kim.checkout-check:";
+const CHECK_DELAY_MS = 900;
+const CHECK_LOCK_TTL_MS = 15_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function getCheckLock(orderId: string): number {
+  const value = Number(sessionStorage.getItem(`${CHECK_LOCK_PREFIX}${orderId}`));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function setCheckLock(orderId: string): void {
+  sessionStorage.setItem(`${CHECK_LOCK_PREFIX}${orderId}`, String(Date.now()));
+}
+
+function clearCheckLock(orderId: string): void {
+  sessionStorage.removeItem(`${CHECK_LOCK_PREFIX}${orderId}`);
+}
+
 /**
- * Checkout SDK giới hạn số lần gọi checkTransaction. Chỉ PaymentDone được dùng
- * để kiểm tra giao dịch và mỗi checkout order chỉ được kiểm tra một lần trong
- * một lượt PaymentDone. Không kiểm tra lại ở OpenApp hoặc bằng polling SDK.
+ * Checkout SDK chỉ cho phép số lần checkTransaction rất thấp.
+ * Listener này chỉ kiểm tra 1 lần cho mỗi PaymentDone và có khóa sessionStorage
+ * để tránh React remount / event trùng tạo lỗi -1409 / -1410.
  */
 export default function PaymentResultListener() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const checkingRef = useRef(false);
-  const lastCheckedOrderRef = useRef<string | null>(null);
 
   const handlePaymentDone = useCallback(
     async (eventData: unknown) => {
@@ -42,19 +62,36 @@ export default function PaymentResultListener() {
         return;
       }
 
-      // Chặn event trùng và các request đồng thời gây lỗi SDK -1409/-1410.
-      if (checkingRef.current || lastCheckedOrderRef.current === checkoutOrderId) {
+      if (checkingRef.current) {
+        console.log("PAYMENT_DONE ignored: checkTransaction is running");
+        return;
+      }
+
+      const previousCheckAt = getCheckLock(checkoutOrderId);
+      if (previousCheckAt > 0 && Date.now() - previousCheckAt < CHECK_LOCK_TTL_MS) {
         console.log("PAYMENT_DONE duplicate ignored:", checkoutOrderId);
         return;
       }
 
       checkingRef.current = true;
-      lastCheckedOrderRef.current = checkoutOrderId;
+      setCheckLock(checkoutOrderId);
 
       try {
-        // Theo type/tài liệu đi kèm zmp-sdk: check bằng orderId do createOrder trả về.
+        // Đợi Checkout đóng/redirect ổn định rồi mới check đúng 1 lần.
+        await sleep(CHECK_DELAY_MS);
+
+        const data =
+          typeof eventData === "string"
+            ? eventData
+            : eventData && typeof eventData === "object"
+              ? (eventData as Record<string, string | null | undefined>)
+              : ({ orderId: checkoutOrderId } as Record<
+                  string,
+                  string | null | undefined
+                >);
+
         const result = (await CheckoutSDK.checkTransaction({
-          data: { orderId: checkoutOrderId },
+          data: data as string | Record<string, string | null | undefined>,
         })) as TransactionResult;
 
         console.log("CHECKOUT TRANSACTION RESULT:", result);
@@ -79,7 +116,7 @@ export default function PaymentResultListener() {
         }
 
         if (resultCode === -2) {
-          // Người dùng hủy/đóng Checkout. Giữ giỏ hàng để có thể thử lại.
+          // Checkout chưa hoàn tất. Không retry tự động để tránh rate limit.
           console.log("CHECKOUT NOT COMPLETED:", result);
           toast(t("paymentResult", "notCompleted"));
           return;
@@ -89,8 +126,21 @@ export default function PaymentResultListener() {
         toast.error(result?.msg || t("paymentResult", "failed"));
         navigate(`/payment-result?${params.toString()}`, { replace: true });
       } catch (error) {
-        // Không tự retry checkTransaction: SDK có rate limit rất thấp.
         console.error("CHECK_TRANSACTION_PAYMENT_DONE_ERROR:", error);
+
+        const code =
+          typeof error === "object" && error
+            ? Number((error as { code?: number }).code)
+            : Number.NaN;
+
+        // -1409/-1410 là giới hạn/duplicate request. Không retry vòng lặp.
+        if (code === -1409 || code === -1410) {
+          toast(t("paymentResult", "checkFailed"));
+          return;
+        }
+
+        // Lỗi khác có thể thử lại khi có PaymentDone mới.
+        clearCheckLock(checkoutOrderId);
         toast.error(t("paymentResult", "checkFailed"));
       } finally {
         checkingRef.current = false;
