@@ -91,6 +91,18 @@ export function verifyNotifyMac(input: {
   receivedMac: string;
   privateKey: string;
 }): boolean {
-  const content = `appId=${input.appId}&method=${input.method}&orderId=${input.orderId}`;
-  return timingSafeHexEqual(hmacSha256(input.privateKey, content), input.receivedMac);
+  const content =
+    `appId=${input.appId}` +
+    `&orderId=${input.orderId}` +
+    `&method=${input.method}`;
+
+  const expectedMac = hmacSha256(
+    input.privateKey,
+    content,
+  );
+
+  return timingSafeHexEqual(
+    expectedMac,
+    input.receivedMac,
+  );
 }
