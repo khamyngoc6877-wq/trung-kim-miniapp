@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { adminCreate, adminDelete, adminList, adminUpdate, publicGet, publicList } from "../controllers/product.controller.js";
+import { requireAdmin } from "../middleware/admin-auth.js";
+
+const router = Router();
+router.get("/", publicList);
+router.get("/:id", publicGet);
+router.get("/admin/all", requireAdmin, adminList);
+router.post("/admin", requireAdmin, adminCreate);
+router.put("/admin/:id", requireAdmin, adminUpdate);
+router.delete("/admin/:id", requireAdmin, adminDelete);
+export default router;
