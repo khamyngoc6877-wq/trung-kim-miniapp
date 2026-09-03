@@ -29,6 +29,10 @@ import toast from "react-hot-toast";
 import { calculateDistance } from "./utils/location";
 import { formatDistant } from "./utils/format";
 import CONFIG from "./config";
+import {
+  fetchCustomerOrders,
+  type BackendOrder,
+} from "@/services/order-history.service";
 
 export const userInfoKeyState = atom(0);
 
@@ -224,17 +228,205 @@ export const shippingAddressState = atomWithStorage<
   ShippingAddress | undefined
 >(CONFIG.STORAGE_KEYS.SHIPPING_ADDRESS, undefined);
 
-export const ordersState = atomFamily((status: OrderStatus) =>
-  atomWithRefresh(async () => {
-    // Phía tích hợp thay đổi logic filter server-side nếu cần:
-    // const serverSideFilteredData = await requestWithFallback<Order[]>(`/orders?status=${status}`, []);
-    const allMockOrders = await requestWithFallback<Order[]>("/orders", []);
-    const clientSideFilteredData = allMockOrders.filter(
-      (order) => order.status === status
+function mapBackendOrderStatus(
+  order: BackendOrder,
+): OrderStatus {
+  switch (order.orderStatus) {
+    case "shipping":
+      return "shipping";
+
+    case "completed":
+    case "cancelled":
+      return "completed";
+
+    case "new":
+    case "confirmed":
+    default:
+      return "pending";
+  }
+}
+
+function mapBackendPaymentStatus(
+  order: BackendOrder,
+): Order["paymentStatus"] {
+  if (
+    order.paymentStatus === "paid" ||
+    order.paymentStatus === "cod_confirmed"
+  ) {
+    return "success";
+  }
+
+  if (order.paymentStatus === "failed") {
+    return "failed";
+  }
+
+  return "pending";
+}
+
+function normalizeShippingAddress(
+  value: unknown,
+): ShippingAddress | undefined {
+  if (
+    !value ||
+    typeof value !== "object"
+  ) {
+    return undefined;
+  }
+
+  const address =
+    value as Partial<ShippingAddress>;
+
+  return {
+    alias:
+      String(
+        address.alias ?? "Địa chỉ nhận hàng",
+      ),
+    address:
+      String(address.address ?? ""),
+    name:
+      String(address.name ?? ""),
+    phone:
+      String(address.phone ?? ""),
+  };
+}
+
+function backendOrderToOrder(
+  backendOrder: BackendOrder,
+  products: Product[],
+): Order {
+  const fallbackCategory: Category = {
+    id: 0,
+    name: "",
+    image: "",
+  };
+
+  const items = backendOrder.items.map(
+    (item) => {
+      const productId =
+        Number(item.id);
+
+      const existingProduct =
+        products.find(
+          (product) =>
+            String(product.id) ===
+            String(item.id),
+        );
+
+      const quantity =
+        Number(item.quantity) > 0
+          ? Number(item.quantity)
+          : 1;
+
+      const unitPrice =
+        Number(item.amount) /
+        quantity;
+
+      return {
+        product:
+          existingProduct ?? {
+            id:
+              Number.isFinite(productId)
+                ? productId
+                : 0,
+            name:
+              item.name ||
+              "Sản phẩm",
+            price:
+              Number.isFinite(
+                unitPrice,
+              )
+                ? unitPrice
+                : 0,
+            image: "",
+            category:
+              fallbackCategory,
+          },
+        quantity,
+      };
+    },
+  );
+
+  const shippingAddress =
+    normalizeShippingAddress(
+      backendOrder.shippingAddress,
     );
-    return clientSideFilteredData;
-  })
-);
+
+  const delivery: Delivery =
+    backendOrder.shippingMethod ===
+      "delivery" &&
+    shippingAddress
+      ? {
+          type: "shipping",
+          ...shippingAddress,
+        }
+      : {
+          type: "pickup",
+          // Điểm nhận hàng hiện tại của Trung Kim.
+          stationId: 1,
+        };
+
+  return {
+    id: backendOrder.id,
+    code: backendOrder.code,
+    status:
+      mapBackendOrderStatus(
+        backendOrder,
+      ),
+    paymentStatus:
+      mapBackendPaymentStatus(
+        backendOrder,
+      ),
+    createdAt:
+      new Date(
+        backendOrder.createdAt,
+      ),
+    receivedAt:
+      new Date(
+        backendOrder.updatedAt ||
+          backendOrder.createdAt,
+      ),
+    items,
+    delivery,
+    total:
+      Number(
+        backendOrder.totalAmount,
+      ) || 0,
+    note:
+      backendOrder.paymentMessage ??
+      backendOrder.code ??
+      "",
+  };
+}
+
+export const ordersState =
+  atomFamily(
+    (status: OrderStatus) =>
+      atomWithRefresh(
+        async (get) => {
+          const [
+            backendOrders,
+            products,
+          ] =
+            await Promise.all([
+              fetchCustomerOrders(),
+              get(productsState),
+            ]);
+
+          return backendOrders
+            .map((order) =>
+              backendOrderToOrder(
+                order,
+                products,
+              ),
+            )
+            .filter(
+              (order) =>
+                order.status ===
+                status,
+            );
+        },
+      ),
+  );
 
 export const deliveryModeState = atomWithStorage<Delivery["type"]>(
   CONFIG.STORAGE_KEYS.DELIVERY,
