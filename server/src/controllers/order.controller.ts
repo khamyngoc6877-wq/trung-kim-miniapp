@@ -2,8 +2,11 @@ import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import {
   findOrderById,
+  listOrders,
   saveOrder,
+  updateOrderStatus,
   type OrderItem,
+  type OrderStatus,
   type PaymentMethod,
   type ShippingArea,
   type ShippingMethod,
@@ -91,6 +94,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       items,
       paymentMethod: body.paymentMethod,
       paymentStatus: "pending",
+      orderStatus: "new",
       createdAt: now,
       updatedAt: now,
     });
@@ -111,8 +115,62 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
       res.status(400).json({ message: "orderId không hợp lệ" });
       return;
     }
-
     const order = await findOrderById(orderId);
+    if (!order) {
+      res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+      return;
+    }
+    res.status(200).json(order);
+  } catch (error) {
+    console.error("Get order error", error);
+    res.status(500).json({
+      message: error instanceof Error ? error.message : "Không thể lấy đơn hàng",
+    });
+  }
+}
+
+export async function adminListOrders(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    res.status(200).json(await listOrders());
+  } catch (error) {
+    console.error("Admin list orders error", error);
+    res.status(500).json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "Không thể lấy danh sách đơn hàng",
+    });
+  }
+}
+
+export async function adminUpdateOrderStatus(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const orderId = String(req.params.orderId ?? "").trim();
+    const status = String(req.body?.status ?? "").trim() as OrderStatus;
+    const allowed: OrderStatus[] = [
+      "new",
+      "confirmed",
+      "shipping",
+      "completed",
+      "cancelled",
+    ];
+
+    if (!orderId) {
+      res.status(400).json({ message: "orderId không hợp lệ" });
+      return;
+    }
+    if (!allowed.includes(status)) {
+      res.status(400).json({ message: "Trạng thái đơn hàng không hợp lệ" });
+      return;
+    }
+
+    const order = await updateOrderStatus(orderId, status);
     if (!order) {
       res.status(404).json({ message: "Không tìm thấy đơn hàng" });
       return;
@@ -120,9 +178,12 @@ export async function getOrder(req: Request, res: Response): Promise<void> {
 
     res.status(200).json(order);
   } catch (error) {
-    console.error("Get order error", error);
+    console.error("Admin update order status error", error);
     res.status(500).json({
-      message: error instanceof Error ? error.message : "Không thể lấy đơn hàng",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật trạng thái đơn hàng",
     });
   }
 }

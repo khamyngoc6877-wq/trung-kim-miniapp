@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quản lý đơn hàng - Trung Kim</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#172033}
+.wrap{max-width:1280px;margin:auto;padding:24px}.top,.auth,.filters,.head,.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.top,.head{justify-content:space-between}.card,.order,.stat{background:#fff;border:1px solid #e5e7eb;border-radius:14px}
+.card{padding:16px;margin-top:16px}.order{padding:16px;margin-top:12px}.order.new{border-left:5px solid #e67e22}
+input,select,button{padding:10px 12px;border:1px solid #cfd5df;border-radius:9px;background:#fff;font-size:14px}
+.auth input,.filters input{flex:1;min-width:260px}button{cursor:pointer}button.primary{background:#0f3d73;color:#fff;border-color:#0f3d73}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}.stat{padding:14px}.stat b{display:block;font-size:22px;margin-top:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}.muted{color:#667085}.code{font-size:18px;font-weight:700}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#eef2f7;font-size:12px}.newcount{background:#d92d20;color:white;border-radius:999px;padding:3px 8px;font-size:12px}
+.items{margin-top:10px;padding-top:10px;border-top:1px solid #eee}.item{display:flex;justify-content:space-between;gap:12px;padding:5px 0}.total{font-weight:700;font-size:18px}
+.empty{text-align:center;padding:40px;color:#667085}.error{color:#b42318}.ok{color:#067647}
+@media(max-width:760px){.wrap{padding:14px}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.auth input,.filters input{min-width:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Quản lý đơn hàng <span id="newBadge" class="newcount" hidden>0</span></h1>
+      <div class="muted">Tự làm mới mỗi 15 giây</div>
+    </div>
+    <button id="refreshBtn" class="primary">Làm mới</button>
+  </div>
+
+  <div class="card">
+    <div class="auth">
+      <input id="token" type="password" placeholder="Nhập ADMIN_TOKEN">
+      <button id="saveToken">Lưu token</button>
+      <button id="clearToken">Xóa token</button>
+    </div>
+    <div id="message" class="muted" style="margin-top:8px"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">Đơn mới<b id="sNew">0</b></div>
+    <div class="stat">Đã xác nhận<b id="sConfirmed">0</b></div>
+    <div class="stat">Đang giao<b id="sShipping">0</b></div>
+    <div class="stat">Hoàn thành<b id="sCompleted">0</b></div>
+    <div class="stat">Đã hủy<b id="sCancelled">0</b></div>
+  </div>
+
+  <div class="card filters">
+    <input id="search" placeholder="Tìm mã đơn, sản phẩm, SĐT...">
+    <select id="statusFilter">
+      <option value="">Tất cả trạng thái</option>
+      <option value="new">Đơn mới</option>
+      <option value="confirmed">Đã xác nhận</option>
+      <option value="shipping">Đang giao</option>
+      <option value="completed">Hoàn thành</option>
+      <option value="cancelled">Đã hủy</option>
+    </select>
+  </div>
+
+  <div id="orders"></div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const state = { orders: [] };
+  const labels = {new:"Đơn mới",confirmed:"Đã xác nhận",shipping:"Đang giao",completed:"Hoàn thành",cancelled:"Đã hủy"};
+  const pay = {pending:"Chờ thanh toán",paid:"Đã thanh toán",failed:"Thanh toán thất bại",cod_confirmed:"COD đã xác nhận"};
+  $("token").value = localStorage.getItem("tk_admin_token") || "";
+
+  const money = v => Number(v||0).toLocaleString("vi-VN")+" ₫";
+  const esc = v => String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  const token = () => $("token").value.trim();
+
+  function addressText(v){
+    if(!v) return "";
+    if(typeof v==="string") return v;
+    if(typeof v!=="object") return String(v);
+    const keys=["name","fullName","customerName","phone","phoneNumber","address","detail","ward","district","city","province"];
+    const out=[]; keys.forEach(k=>{if(v[k]&&!out.includes(String(v[k]))) out.push(String(v[k]))});
+    return out.length?out.join(" · "):JSON.stringify(v);
+  }
+
+  async function api(url, options={}){
+    const headers={"Content-Type":"application/json",...(options.headers||{})};
+    if(token()) headers.Authorization="Bearer "+token();
+    const r=await fetch(url,{...options,headers});
+    const data=await r.json().catch(()=>null);
+    if(!r.ok) throw new Error(data?.message||"Yêu cầu thất bại");
+    return data;
+  }
+
+  function render(){
+    const counts={new:0,confirmed:0,shipping:0,completed:0,cancelled:0};
+    state.orders.forEach(o=>{const s=o.orderStatus||"new";counts[s]=(counts[s]||0)+1});
+    $("sNew").textContent=counts.new;$("sConfirmed").textContent=counts.confirmed;$("sShipping").textContent=counts.shipping;$("sCompleted").textContent=counts.completed;$("sCancelled").textContent=counts.cancelled;
+    $("newBadge").textContent=counts.new;$("newBadge").hidden=counts.new===0;
+
+    const q=$("search").value.trim().toLowerCase(), sf=$("statusFilter").value;
+    const list=state.orders.filter(o=>(!sf||(o.orderStatus||"new")===sf)&&(!q||JSON.stringify(o).toLowerCase().includes(q)));
+    if(!list.length){$("orders").innerHTML='<div class="empty">Chưa có đơn hàng phù hợp.</div>';return}
+
+    $("orders").innerHTML=list.map(o=>{
+      const s=o.orderStatus||"new", items=Array.isArray(o.items)?o.items:[], address=addressText(o.shippingAddress);
+      return `<div class="order ${s==="new"?"new":""}">
+        <div class="head"><div><div class="code">${esc(o.code||o.id)}</div><div class="muted">${esc(new Date(o.createdAt).toLocaleString("vi-VN"))}</div></div>
+        <div class="actions"><span class="badge">${esc(pay[o.paymentStatus]||o.paymentStatus||"")}</span>
+        <select class="statusSelect" data-order-id="${esc(o.id)}">${Object.entries(labels).map(([v,l])=>`<option value="${v}" ${v===s?"selected":""}>${l}</option>`).join("")}</select></div></div>
+        <div class="grid"><div><div><b>Nhận hàng:</b> ${o.shippingMethod==="pickup"?"Nhận tại cửa hàng":"Giao hàng"}</div>${address?`<div><b>Khách/địa chỉ:</b> ${esc(address)}</div>`:""}<div><b>Thanh toán:</b> ${o.paymentMethod==="zalopay"?"ZaloPay":"COD / tiền mặt"}</div></div>
+        <div><div>Tạm tính: ${money(o.subtotal)}</div><div>Phí giao hàng: ${money(o.shippingFee)}</div><div class="total">Tổng: ${money(o.totalAmount)}</div></div></div>
+        <div class="items"><b>Sản phẩm</b>${items.map(i=>`<div class="item"><span>${esc(i.name)} × ${esc(i.quantity)}</span><span>${money(i.amount)}</span></div>`).join("")}</div>
+      </div>`;
+    }).join("");
+
+    document.querySelectorAll(".statusSelect").forEach(el=>el.addEventListener("change",async e=>{
+      const s=e.currentTarget;s.disabled=true;
+      try{
+        await api(`/api/orders/admin/${encodeURIComponent(s.dataset.orderId)}/status`,{method:"PATCH",body:JSON.stringify({status:s.value})});
+        $("message").className="ok";$("message").textContent="Đã cập nhật trạng thái đơn hàng.";await load(false);
+      }catch(err){$("message").className="error";$("message").textContent=err.message;s.disabled=false}
+    }));
+  }
+
+  async function load(show=true){
+    if(!token()){if(show){$("message").className="error";$("message").textContent="Vui lòng nhập ADMIN_TOKEN."}return}
+    try{
+      const data=await api("/api/orders/admin/all");state.orders=Array.isArray(data)?data:[];
+      if(show){$("message").className="ok";$("message").textContent="Đã tải danh sách đơn hàng."}
+      render();
+    }catch(err){$("message").className="error";$("message").textContent=err.message}
+  }
+
+  $("saveToken").addEventListener("click",()=>{localStorage.setItem("tk_admin_token",token());load()});
+  $("clearToken").addEventListener("click",()=>{localStorage.removeItem("tk_admin_token");$("token").value="";state.orders=[];render();$("message").textContent="Đã xóa token."});
+  $("refreshBtn").addEventListener("click",()=>load());
+  $("search").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
+  load(false);setInterval(()=>load(false),15000);
+})();
+</script>
+</body>
+</html>
