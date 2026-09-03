@@ -19,6 +19,8 @@ export type StoreOrder = {
   code: string;
   subtotal: number;
   shippingFee: number;
+  discountAmount?: number;
+  voucherCode?: string;
   totalAmount: number;
   shippingMethod: ShippingMethod;
   shippingArea?: ShippingArea;

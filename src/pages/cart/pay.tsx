@@ -5,6 +5,7 @@ import { Button, Radio, Sheet } from "zmp-ui";
 import { useCheckout } from "@/hooks/use-checkout";
 import { useTranslation } from "@/hooks/use-translation";
 import { cartState, cartTotalState } from "@/state";
+import { appliedVoucherState } from "@/state/voucher";
 import {
   deliveryModeState,
   shippingAddressState,
@@ -25,6 +26,7 @@ export default function Pay() {
   const cart = useAtomValue(cartState);
   const { totalAmount: subtotal } = useAtomValue(cartTotalState);
   const shippingAddress = useAtomValue(shippingAddressState);
+  const appliedVoucher = useAtomValue(appliedVoucherState);
   const [deliveryMode, setDeliveryMode] = useAtom(deliveryModeState);
 
   const checkout = useCheckout();
@@ -55,7 +57,15 @@ export default function Pay() {
     [subtotal, shippingArea, shippingMethod],
   );
 
-  const finalTotal = subtotal + shippingFee;
+  const discountAmount = Math.min(
+    appliedVoucher?.discountAmount ?? 0,
+    subtotal,
+  );
+
+  const finalTotal = Math.max(
+    0,
+    subtotal + shippingFee - discountAmount,
+  );
 
   const paymentItems = useMemo(
     () =>
@@ -118,6 +128,8 @@ export default function Pay() {
       const result = await checkout({
         subtotal,
         shippingFee,
+        discountAmount,
+        voucherCode: appliedVoucher?.code,
         totalAmount: finalTotal,
         shippingMethod,
         shippingArea:
@@ -186,6 +198,13 @@ export default function Pay() {
                 : formatPrice(shippingFee)}
             </span>
           </div>
+
+          {discountAmount > 0 && (
+            <div className="flex justify-between gap-4 text-sm text-green-600">
+              <span>Voucher {appliedVoucher?.code}</span>
+              <span>-{formatPrice(discountAmount)}</span>
+            </div>
+          )}
 
           <div className="flex justify-between gap-4 text-sm">
             <span className="text-subtitle">
@@ -389,6 +408,13 @@ export default function Pay() {
                       : formatPrice(shippingFee)}
                   </span>
                 </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex justify-between gap-4 text-sm text-green-600">
+                    <span>Voucher {appliedVoucher?.code}</span>
+                    <span>-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between gap-4 border-t pt-3">
                   <span className="font-medium">

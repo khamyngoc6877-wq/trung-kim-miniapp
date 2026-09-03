@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import orderRoutes from "./routes/order.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import productRoutes from "./routes/product.routes.js";
+import voucherRoutes from "./routes/voucher.routes.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -54,6 +55,10 @@ app.use("/api/payments", paymentRoutes);
    PRODUCT API
 ========================= */
 app.use("/api/products", productRoutes);
+/* =========================
+   VOUCHER API
+========================= */
+app.use("/api/vouchers", voucherRoutes);
 /* =========================
    ADMIN PRODUCT MANAGEMENT
 ========================= */

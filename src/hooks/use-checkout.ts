@@ -15,6 +15,8 @@ type CheckoutItem = {
 type CheckoutInput = {
   subtotal: number;
   shippingFee: number;
+  discountAmount?: number;
+  voucherCode?: string;
   totalAmount: number;
   shippingMethod: "delivery" | "pickup";
   shippingArea?: "hcm" | "other";
@@ -26,97 +28,57 @@ type CheckoutInput = {
 type MerchantOrder = {
   orderId: string;
   orderCode: string;
+  discountAmount?: number;
+  voucherCode?: string;
 };
 
-async function createMerchantOrder(
-  input: CheckoutInput,
-): Promise<MerchantOrder> {
+async function createMerchantOrder(input: CheckoutInput): Promise<MerchantOrder> {
   if (!API_URL) {
-    throw new Error(
-      translate("errors", "missingApiUrl"),
-    );
+    throw new Error(translate("errors", "missingApiUrl"));
   }
 
   let response: Response;
-
   try {
-    response = await fetch(
-      `${API_URL}/api/orders`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(input),
-      },
-    );
+    response = await fetch(`${API_URL}/api/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
   } catch (error) {
-    console.error(
-      "Create merchant order network error",
-      error,
-    );
-    throw new Error(
-      `${translate(
-        "errors",
-        "backendConnection",
-      )} ${API_URL}`,
-    );
+    console.error("Create merchant order network error", error);
+    throw new Error(`${translate("errors", "backendConnection")} ${API_URL}`);
   }
 
-  const result =
-    (await response
-      .json()
-      .catch(() => null)) as
-      | (MerchantOrder & {
-          message?: string;
-        })
-      | null;
+  const result = (await response.json().catch(() => null)) as
+    | (MerchantOrder & { message?: string })
+    | null;
 
   if (!response.ok) {
     throw new Error(
       result?.message ??
-        `${translate(
-          "errors",
-          "createOrderFailed",
-        )} (${response.status})`,
+        `${translate("errors", "createOrderFailed")} (${response.status})`,
     );
   }
 
   if (!result?.orderId) {
-    throw new Error(
-      translate(
-        "errors",
-        "backendNoOrderId",
-      ),
-    );
+    throw new Error(translate("errors", "backendNoOrderId"));
   }
 
-  // Ghi nhớ mã đơn thật trên thiết bị của khách.
-  // Trang "Đơn hàng" sẽ dùng các ID này để đọc trạng thái mới nhất từ backend.
-  rememberCustomerOrderId(
-    result.orderId,
-  );
-
+  rememberCustomerOrderId(result.orderId);
   return result;
 }
 
 export function useCheckout() {
-  return async (
-    input: CheckoutInput,
-  ) => {
-    const order =
-      await createMerchantOrder(input);
-
-    const checkout =
-      await createCheckoutPayment(
-        order.orderId,
-        input.paymentMethod,
-      );
+  return async (input: CheckoutInput) => {
+    const order = await createMerchantOrder(input);
+    const checkout = await createCheckoutPayment(
+      order.orderId,
+      input.paymentMethod,
+    );
 
     return {
       order,
-      checkoutOrderId:
-        checkout.orderId,
+      checkoutOrderId: checkout.orderId,
     };
   };
 }

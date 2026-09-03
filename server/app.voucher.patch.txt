@@ -1,0 +1,10 @@
+// THÊM VÀO server/src/app.ts
+
+// 1) Thêm import:
+import voucherRoutes from "./routes/voucher.routes.js";
+
+// 2) Đặt dòng này TRƯỚC middleware 404:
+app.use("/api/vouchers", voucherRoutes);
+
+// Trang admin voucher tự được phục vụ nếu app.ts hiện đã có:
+// app.use("/admin", express.static(...))

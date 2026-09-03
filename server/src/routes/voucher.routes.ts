@@ -1,0 +1,19 @@
+import { Router } from "express";
+import { requireAdmin } from "../middleware/admin-auth.js";
+import {
+  adminCreateVoucher,
+  adminDeleteVoucher,
+  adminListVouchers,
+  adminUpdateVoucher,
+  publicValidateVoucher,
+} from "../controllers/voucher.controller.js";
+
+const router = Router();
+
+router.post("/validate", publicValidateVoucher);
+router.get("/admin/all", requireAdmin, adminListVouchers);
+router.post("/admin", requireAdmin, adminCreateVoucher);
+router.put("/admin/:id", requireAdmin, adminUpdateVoucher);
+router.delete("/admin/:id", requireAdmin, adminDeleteVoucher);
+
+export default router;

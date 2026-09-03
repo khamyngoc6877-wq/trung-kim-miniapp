@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import {
+  consumeVoucher,
+  validateVoucher,
+} from "../services/voucher.service.js";
+import {
   findOrderById,
   listOrders,
   saveOrder,
@@ -23,11 +27,13 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       shippingAddress?: unknown;
       paymentMethod?: PaymentMethod;
       items?: OrderItem[];
+      voucherCode?: string;
     };
 
     const subtotal = Number(body.subtotal);
     const shippingFee = Number(body.shippingFee);
     const totalAmount = Number(body.totalAmount);
+    const voucherCode = String(body.voucherCode ?? "").trim().toUpperCase();
 
     if (!Number.isFinite(subtotal) || subtotal < 0) {
       res.status(400).json({ message: "Tiền sản phẩm không hợp lệ" });
@@ -41,8 +47,25 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       res.status(400).json({ message: "Tổng tiền không hợp lệ" });
       return;
     }
-    if (Math.abs(subtotal + shippingFee - totalAmount) > 0.001) {
-      res.status(400).json({ message: "Tổng thanh toán không khớp" });
+    let discountAmount = 0;
+
+    if (voucherCode) {
+      const voucherResult = await validateVoucher(voucherCode, subtotal);
+      if (!voucherResult.valid) {
+        res.status(400).json({ message: voucherResult.message });
+        return;
+      }
+      discountAmount = voucherResult.discountAmount;
+    }
+
+    const expectedTotal = Math.max(0, subtotal + shippingFee - discountAmount);
+
+    if (Math.abs(expectedTotal - totalAmount) > 0.001) {
+      res.status(400).json({
+        message: "Tổng thanh toán không khớp với voucher",
+        expectedTotal,
+        discountAmount,
+      });
       return;
     }
     if (body.paymentMethod !== "cash" && body.paymentMethod !== "zalopay") {
@@ -87,6 +110,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       code,
       subtotal,
       shippingFee,
+      discountAmount,
+      voucherCode: voucherCode || undefined,
       totalAmount,
       shippingMethod: body.shippingMethod,
       shippingArea: body.shippingArea,
@@ -99,7 +124,16 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       updatedAt: now,
     });
 
-    res.status(201).json({ orderId: id, orderCode: code });
+    if (voucherCode) {
+      await consumeVoucher(voucherCode);
+    }
+
+    res.status(201).json({
+      orderId: id,
+      orderCode: code,
+      discountAmount,
+      voucherCode: voucherCode || undefined,
+    });
   } catch (error) {
     console.error("Create order error", error);
     res.status(500).json({
