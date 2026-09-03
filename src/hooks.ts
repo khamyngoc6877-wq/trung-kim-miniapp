@@ -40,21 +40,77 @@ export function useRealHeight(
 
 export function useRequestInformation() {
   const getStoredUserInfo = useAtomCallback(async (get) => {
-    const userInfo = await get(userInfoState);
-    return userInfo;
+    try {
+      return await get(userInfoState);
+    } catch (error) {
+      console.warn("Read user info before authorize failed:", error);
+      return undefined;
+    }
   });
+
   const setInfoKey = useSetAtom(userInfoKeyState);
-  const refreshPermissions = () => setInfoKey((key) => key + 1);
+
+  const refreshPermissions = () => {
+    setInfoKey((key) => key + 1);
+  };
 
   return async () => {
-    const userInfo = await getStoredUserInfo();
-    if (!userInfo) {
-      await authorize({
-        scopes: ["scope.userInfo", "scope.userPhonenumber"],
-      }).then(refreshPermissions);
-      return await getStoredUserInfo();
+    // Nếu đã có thông tin người dùng thì dùng luôn.
+    const currentUserInfo = await getStoredUserInfo();
+
+    if (currentUserInfo) {
+      return currentUserInfo;
     }
-    return userInfo;
+
+    try {
+      // Quyền thông tin cơ bản là quyền bắt buộc để đăng ký thành viên.
+      await authorize({
+        scopes: ["scope.userInfo"],
+      });
+
+      // Số điện thoại là quyền bổ sung.
+      // Nếu khách từ chối số điện thoại thì vẫn cho phép tiếp tục đăng ký.
+      try {
+        await authorize({
+          scopes: ["scope.userPhonenumber"],
+        });
+      } catch (phoneError) {
+        console.warn(
+          "User did not grant phone number permission:",
+          phoneError,
+        );
+      }
+
+      refreshPermissions();
+
+      // Cho state cập nhật lại permission trước khi đọc lại thông tin.
+      await new Promise((resolve) =>
+        setTimeout(resolve, 150),
+      );
+
+      const userInfo = await getStoredUserInfo();
+
+      if (!userInfo) {
+        throw new Error(
+          "Không lấy được thông tin Zalo. Vui lòng cấp quyền thông tin cá nhân rồi thử lại.",
+        );
+      }
+
+      return userInfo;
+    } catch (error) {
+      console.error(
+        "Request member information failed:",
+        error,
+      );
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error(
+        "Không thể lấy quyền thông tin Zalo. Vui lòng thử lại.",
+      );
+    }
   };
 }
 
