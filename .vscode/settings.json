@@ -33,6 +33,14 @@
               "shopAddress": {
                 "type": "string",
                 "description": "Địa chỉ cửa hàng"
+              },
+              "email": {
+                "type": "string",
+                "description": "Email"
+              },
+              "phone": {
+                "type": "string",
+                "description": "Số điện thoại"
               }
             },
             "required": ["name"]

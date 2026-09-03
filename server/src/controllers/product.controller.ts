@@ -1,42 +1,173 @@
 import type { Request, Response } from "express";
-import { createProduct, deleteProduct, getProduct, listProducts, updateProduct } from "../services/product.service.js";
+import {
+  createProduct,
+  deleteProduct,
+  getProduct,
+  listProducts,
+  updateProduct,
+} from "../services/product.service.js";
 import type { ProductInput } from "../types/product.js";
 
 function validate(body: Partial<ProductInput>): string | null {
-  if (!String(body.sku || "").trim()) return "Thiếu mã sản phẩm";
-  if (!String(body.name || "").trim()) return "Thiếu tên sản phẩm";
-  if (!String(body.category || "").trim()) return "Thiếu danh mục";
-  if (Number(body.price) < 0 || Number.isNaN(Number(body.price))) return "Giá bán không hợp lệ";
-  if (Number(body.stock) < 0 || Number.isNaN(Number(body.stock))) return "Tồn kho không hợp lệ";
+  if (!String(body.sku ?? "").trim()) return "Thiếu mã sản phẩm";
+  if (!String(body.name ?? "").trim()) return "Thiếu tên sản phẩm";
+  if (!String(body.category ?? "").trim()) return "Thiếu danh mục";
+
+  const price = Number(body.price);
+  if (!Number.isFinite(price) || price < 0) {
+    return "Giá bán không hợp lệ";
+  }
+
+  const stock = Number(body.stock);
+  if (!Number.isFinite(stock) || stock < 0) {
+    return "Tồn kho không hợp lệ";
+  }
+
   return null;
 }
 
-export async function publicList(req: Request, res: Response): Promise<void> {
+function getParamId(req: Request): string {
+  return String(req.params.id ?? "").trim();
+}
+
+export async function publicList(
+  _req: Request,
+  res: Response,
+): Promise<void> {
   res.json(await listProducts(false));
 }
-export async function publicGet(req: Request, res: Response): Promise<void> {
-  const p = await getProduct(req.params.id);
-  if (!p || p.status !== "active") { res.status(404).json({ message: "Không tìm thấy sản phẩm" }); return; }
-  res.json(p);
+
+export async function publicGet(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = getParamId(req);
+
+  if (!id) {
+    res.status(400).json({
+      message: "ID sản phẩm không hợp lệ",
+    });
+    return;
+  }
+
+  const product = await getProduct(id);
+
+  if (!product || product.status !== "active") {
+    res.status(404).json({
+      message: "Không tìm thấy sản phẩm",
+    });
+    return;
+  }
+
+  res.json(product);
 }
-export async function adminList(req: Request, res: Response): Promise<void> {
+
+export async function adminList(
+  _req: Request,
+  res: Response,
+): Promise<void> {
   res.json(await listProducts(true));
 }
-export async function adminCreate(req: Request, res: Response): Promise<void> {
-  const error = validate(req.body);
-  if (error) { res.status(400).json({ message: error }); return; }
-  res.status(201).json(await createProduct(req.body));
+
+export async function adminCreate(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const input = req.body as ProductInput;
+  const error = validate(input);
+
+  if (error) {
+    res.status(400).json({ message: error });
+    return;
+  }
+
+  res.status(201).json(
+    await createProduct(input),
+  );
 }
-export async function adminUpdate(req: Request, res: Response): Promise<void> {
-  const current = await getProduct(req.params.id);
-  if (!current) { res.status(404).json({ message: "Không tìm thấy sản phẩm" }); return; }
-  const merged = { ...current, ...req.body };
+
+export async function adminUpdate(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = getParamId(req);
+
+  if (!id) {
+    res.status(400).json({
+      message: "ID sản phẩm không hợp lệ",
+    });
+    return;
+  }
+
+  const current = await getProduct(id);
+
+  if (!current) {
+    res.status(404).json({
+      message: "Không tìm thấy sản phẩm",
+    });
+    return;
+  }
+
+  const input = req.body as Partial<ProductInput>;
+  const merged: ProductInput = {
+    sku: input.sku ?? current.sku,
+    name: input.name ?? current.name,
+    nameZh: input.nameZh ?? current.nameZh,
+    category: input.category ?? current.category,
+    brand: input.brand ?? current.brand,
+    price: input.price ?? current.price,
+    compareAtPrice:
+      input.compareAtPrice ?? current.compareAtPrice,
+    stock: input.stock ?? current.stock,
+    description:
+      input.description ?? current.description,
+    specifications:
+      input.specifications ?? current.specifications,
+    images: input.images ?? current.images,
+    variants: input.variants ?? current.variants,
+    status: input.status ?? current.status,
+  };
+
   const error = validate(merged);
-  if (error) { res.status(400).json({ message: error }); return; }
-  res.json(await updateProduct(req.params.id, req.body));
+
+  if (error) {
+    res.status(400).json({ message: error });
+    return;
+  }
+
+  const updated = await updateProduct(id, input);
+
+  if (!updated) {
+    res.status(404).json({
+      message: "Không tìm thấy sản phẩm",
+    });
+    return;
+  }
+
+  res.json(updated);
 }
-export async function adminDelete(req: Request, res: Response): Promise<void> {
-  const ok = await deleteProduct(req.params.id);
-  if (!ok) { res.status(404).json({ message: "Không tìm thấy sản phẩm" }); return; }
+
+export async function adminDelete(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = getParamId(req);
+
+  if (!id) {
+    res.status(400).json({
+      message: "ID sản phẩm không hợp lệ",
+    });
+    return;
+  }
+
+  const ok = await deleteProduct(id);
+
+  if (!ok) {
+    res.status(404).json({
+      message: "Không tìm thấy sản phẩm",
+    });
+    return;
+  }
+
   res.status(204).end();
 }

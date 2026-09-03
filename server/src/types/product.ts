@@ -1,4 +1,6 @@
-export type ProductStatus = "active" | "hidden";
+export type ProductStatus =
+  | "active"
+  | "hidden";
 
 export interface ProductVariant {
   id: string;
@@ -28,4 +30,7 @@ export interface Product {
   updatedAt: string;
 }
 
-export type ProductInput = Omit<Product, "id" | "createdAt" | "updatedAt">;
+export type ProductInput = Omit<
+  Product,
+  "id" | "createdAt" | "updatedAt"
+>;
