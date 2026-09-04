@@ -19,12 +19,7 @@ import {
   UserInfo,
 } from "@/types";
 import { requestWithFallback } from "@/utils/request";
-import {
-  getLocation,
-  getPhoneNumber,
-  getSetting,
-  getUserInfo,
-} from "zmp-sdk/apis";
+import { getLocation } from "zmp-sdk/apis";
 import toast from "react-hot-toast";
 import { calculateDistance } from "./utils/location";
 import { formatDistant } from "./utils/format";
@@ -36,67 +31,82 @@ import {
 
 export const userInfoKeyState = atom(0);
 
-export const userInfoState = atom<Promise<UserInfo>>(async (get) => {
-  get(userInfoKeyState);
+export const userInfoState = atom<Promise<UserInfo | undefined>>(
+  async (get) => {
+    get(userInfoKeyState);
 
-  // Nếu người dùng đã chỉnh sửa thông tin tài khoản trước đó, sử dụng thông tin đã lưu trữ
-  const savedUserInfo = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_INFO);
-  // Phía tích hợp có thể thay đổi logic này thành fetch từ server
-  // const savedUserInfo = await fetchUserInfo({ token: await getAccessToken() });
-  if (savedUserInfo) {
-    return JSON.parse(savedUserInfo);
-  }
+    const savedUserInfo = localStorage.getItem(
+      CONFIG.STORAGE_KEYS.USER_INFO,
+    );
 
-  const {
-    authSetting: {
-      "scope.userInfo": grantedUserInfo,
-      "scope.userPhonenumber": grantedPhoneNumber,
-    },
-  } = await getSetting({});
-  const isDev = !window.ZJSBridge;
-  if (grantedUserInfo || isDev) {
-    // Người dùng cho phép truy cập tên và ảnh đại diện
-    const { userInfo } = await getUserInfo({});
-    const phone =
-      grantedPhoneNumber || isDev // Người dùng cho phép truy cập số điện thoại
-        ? await get(phoneState)
-        : "";
-    return {
-      id: userInfo.id,
-      name: userInfo.name,
-      avatar: userInfo.avatar,
-      phone,
-      email: "",
-      address: "",
-    };
-  }
-});
+    if (!savedUserInfo) {
+      return undefined;
+    }
+
+    try {
+      const parsed = JSON.parse(savedUserInfo) as Partial<UserInfo>;
+
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        !String(parsed.name ?? "").trim() ||
+        !String(parsed.phone ?? "").trim()
+      ) {
+        return undefined;
+      }
+
+      // Với thành viên đã đăng ký trước bản cập nhật này,
+      // lấy thời điểm từ member id nếu có, nếu không dùng thời điểm hiện tại.
+      const memberId = String(parsed.id ?? "").trim();
+      const timestampMatch = memberId.match(/^member-(\d+)-/);
+      const fallbackRegisteredAt = timestampMatch
+        ? new Date(Number(timestampMatch[1]))
+        : new Date();
+
+      const registeredAt = parsed.registeredAt
+        ? new Date(parsed.registeredAt)
+        : fallbackRegisteredAt;
+
+      const pointsExpireAt = parsed.pointsExpireAt
+        ? new Date(parsed.pointsExpireAt)
+        : (() => {
+            const next = new Date(registeredAt);
+            next.setFullYear(next.getFullYear() + 1);
+            return next;
+          })();
+
+      const member: UserInfo = {
+        id: memberId || `member-${Date.now()}`,
+        name: String(parsed.name ?? "").trim(),
+        avatar: String(parsed.avatar ?? ""),
+        phone: String(parsed.phone ?? "").trim(),
+        email: String(parsed.email ?? "").trim(),
+        address: String(parsed.address ?? "").trim(),
+        points: Number.isFinite(Number(parsed.points))
+          ? Math.max(0, Number(parsed.points))
+          : 0,
+        registeredAt: registeredAt.toISOString(),
+        pointsExpireAt: pointsExpireAt.toISOString(),
+      };
+
+      // Nâng cấp dữ liệu cũ để lần sau không còn dùng ngày/điểm mẫu.
+      localStorage.setItem(
+        CONFIG.STORAGE_KEYS.USER_INFO,
+        JSON.stringify(member),
+      );
+
+      return member;
+    } catch (error) {
+      console.warn(
+        "Không đọc được thông tin thành viên đã lưu:",
+        error,
+      );
+      return undefined;
+    }
+  },
+);
 
 export const loadableUserInfoState = loadable(userInfoState);
-
-export const phoneState = atom(async () => {
-  let phone = "";
-  try {
-    const { token } = await getPhoneNumber({});
-    // Phía tích hợp làm theo hướng dẫn tại https://mini.zalo.me/documents/api/getPhoneNumber/ để chuyển đổi token thành số điện thoại người dùng ở server.
-    // phone = await decodeToken(token);
-
-    // Các bước bên dưới để demo chức năng, phía tích hợp có thể bỏ đi sau.
-    toast(
-      "Đã lấy được token chứa số điện thoại người dùng. Phía tích hợp cần decode token này ở server. Giả lập số điện thoại 0912345678...",
-      {
-        icon: "ℹ",
-        duration: 10000,
-      }
-    );
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    phone = "0912345678";
-    // End demo
-  } catch (error) {
-    console.warn(error);
-  }
-  return phone;
-});
 
 export const bannersState = atom(() =>
   requestWithFallback<string[]>("/banners", [])

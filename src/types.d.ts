@@ -5,6 +5,9 @@ export interface UserInfo {
   phone: string;
   email: string;
   address: string;
+  points?: number;
+  registeredAt?: string;
+  pointsExpireAt?: string;
 }
 
 export interface Product {
@@ -75,4 +78,14 @@ export interface Order {
   delivery: Delivery;
   total: number;
   note: string;
+}
+
+export interface Size {
+  id: number;
+  name: string;
+}
+
+export interface Color {
+  id: number;
+  name: string;
 }
