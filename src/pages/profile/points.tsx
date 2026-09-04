@@ -15,24 +15,21 @@ import {
 } from "jotai";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { Icon } from "zmp-ui";
 
 function formatDate(value?: string) {
   if (!value) return "--/--/----";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) {
     return "--/--/----";
   }
 
-  return new Intl.DateTimeFormat(
-    "vi-VN",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    },
-  ).format(date);
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
 
 type PointHistoryItem = {
@@ -62,22 +59,18 @@ type ExtraMember = {
 };
 
 export default function Points() {
-  const userInfo = useAtomValue(
-    loadableUserInfoState,
-  );
+  const userInfo = useAtomValue(loadableUserInfoState);
+  const refreshUserInfo = useSetAtom(userInfoKeyState);
 
-  const refreshUserInfo = useSetAtom(
-    userInfoKeyState,
-  );
-
-  const [redeeming, setRedeeming] =
-    useState(false);
+  const [redeeming, setRedeeming] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showVouchers, setShowVouchers] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const member =
     userInfo.state === "hasData"
       ? (userInfo.data as
-          | (typeof userInfo.data &
-              ExtraMember)
+          | (typeof userInfo.data & ExtraMember)
           | undefined)
       : undefined;
 
@@ -86,14 +79,28 @@ export default function Points() {
     Number(member?.points ?? 0),
   );
 
-  const missingPoints = Math.max(
-    0,
-    100 - points,
-  );
+  const missingPoints = Math.max(0, 100 - points);
 
-  async function syncMember() {
-    await refreshMember();
-    refreshUserInfo((key) => key + 1);
+  async function syncMember(showToast = false) {
+    try {
+      setRefreshing(true);
+      const updated = await refreshMember();
+
+      if (updated) {
+        refreshUserInfo((key) => key + 1);
+        if (showToast) {
+          toast.success("Đã cập nhật dữ liệu thành viên.");
+        }
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật dữ liệu thành viên.",
+      );
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function handleRedeem() {
@@ -109,16 +116,16 @@ export default function Points() {
     try {
       setRedeeming(true);
 
-      const result = await redeemPoints(
-        member.id,
-      );
+      const result = await redeemPoints(member.id);
 
       await syncMember();
 
+      setShowVouchers(true);
+      setShowHistory(true);
+
       toast.success(
         `Đổi điểm thành công. Mã voucher: ${
-          result?.redeemedVoucher?.code ??
-          "đã tạo"
+          result?.redeemedVoucher?.code ?? "đã tạo"
         }`,
         {
           duration: 7000,
@@ -142,8 +149,7 @@ export default function Points() {
         style={{
           backgroundImage: `url(${barcodeIllusLeft}), url(${barcodeIllusRight})`,
           backgroundRepeat: "no-repeat",
-          backgroundPosition:
-            "top left, bottom right",
+          backgroundPosition: "top left, bottom right",
           backgroundSize: "auto, auto",
         }}
       >
@@ -152,22 +158,17 @@ export default function Points() {
         </div>
 
         <div className="opacity-95 text-2xs">
-          Ngày đăng ký:{" "}
-          {formatDate(member?.registeredAt)}
+          Ngày đăng ký: {formatDate(member?.registeredAt)}
         </div>
 
         <div className="opacity-95 text-2xs">
           Điểm có hiệu lực đến:{" "}
-          {formatDate(
-            member?.pointsExpireAt,
-          )}
+          {formatDate(member?.pointsExpireAt)}
         </div>
 
         <div className="mt-3 rounded-lg bg-white/15 p-3 text-sm">
           <div>10.000đ = 1 điểm</div>
-          <div>
-            100 điểm = voucher 20.000đ
-          </div>
+          <div>100 điểm = voucher 20.000đ</div>
 
           <button
             type="button"
@@ -181,6 +182,15 @@ export default function Points() {
                 ? "Đổi 100 điểm lấy voucher 20.000đ"
                 : `Cần thêm ${missingPoints} điểm`}
           </button>
+
+          <button
+            type="button"
+            disabled={refreshing}
+            onClick={() => void syncMember(true)}
+            className="mt-2 w-full rounded-lg border border-white/60 px-4 py-2 text-white disabled:opacity-50"
+          >
+            {refreshing ? "Đang cập nhật..." : "Làm mới điểm & voucher"}
+          </button>
         </div>
 
         <div className="bg-white rounded-lg mt-2 py-2.5 space-y-2.5 flex flex-col items-center">
@@ -191,81 +201,108 @@ export default function Points() {
         </div>
       </div>
 
-      <div className="rounded-lg bg-section p-4 border-[0.5px] border-black/10">
-        <div className="font-medium mb-2">
-          Voucher của tôi
-        </div>
-
-        {member?.vouchers?.length ? (
-          member.vouchers.map((voucher) => (
-            <div
-              key={voucher.code}
-              className="border-t border-black/10 py-2 first:border-t-0"
-            >
-              <div className="font-medium text-primary">
-                {voucher.code}
-              </div>
-              <div className="text-sm">
-                Giảm{" "}
-                {voucher.discountAmount.toLocaleString(
-                  "vi-VN",
-                )}
-                đ
-              </div>
-              <div className="text-xs text-subtitle">
-                Hạn dùng:{" "}
-                {formatDate(voucher.endAt)}
-              </div>
+      <div className="rounded-lg bg-section border-[0.5px] border-black/10 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowVouchers((value) => !value)}
+          className="w-full p-4 flex items-center justify-between text-left"
+        >
+          <div>
+            <div className="font-medium">Voucher của tôi</div>
+            <div className="text-xs text-subtitle mt-0.5">
+              {member?.vouchers?.length
+                ? `${member.vouchers.length} voucher`
+                : "Chưa có voucher đổi từ điểm"}
             </div>
-          ))
-        ) : (
-          <div className="text-sm text-subtitle">
-            Chưa có voucher đổi từ điểm.
+          </div>
+          <Icon icon={showVouchers ? "zi-chevron-up" : "zi-chevron-down"} />
+        </button>
+
+        {showVouchers && (
+          <div className="border-t border-black/10 px-4 pb-2">
+            {member?.vouchers?.length ? (
+              member.vouchers.map((voucher) => (
+                <div
+                  key={voucher.code}
+                  className="border-t border-black/10 py-3 first:border-t-0"
+                >
+                  <div className="font-medium text-primary">
+                    {voucher.code}
+                  </div>
+                  <div className="text-sm">
+                    Giảm{" "}
+                    {voucher.discountAmount.toLocaleString(
+                      "vi-VN",
+                    )}
+                    đ
+                  </div>
+                  <div className="text-xs text-subtitle">
+                    Hạn dùng: {formatDate(voucher.endAt)}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-3 text-sm text-subtitle">
+                Chưa có voucher đổi từ điểm.
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <div className="rounded-lg bg-section p-4 border-[0.5px] border-black/10">
-        <div className="font-medium mb-2">
-          Lịch sử điểm
-        </div>
+      <div className="rounded-lg bg-section border-[0.5px] border-black/10 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowHistory((value) => !value)}
+          className="w-full p-4 flex items-center justify-between text-left"
+        >
+          <div>
+            <div className="font-medium">Lịch sử điểm</div>
+            <div className="text-xs text-subtitle mt-0.5">
+              {member?.pointHistory?.length
+                ? `${member.pointHistory.length} giao dịch`
+                : "Chưa có giao dịch điểm"}
+            </div>
+          </div>
+          <Icon icon={showHistory ? "zi-chevron-up" : "zi-chevron-down"} />
+        </button>
 
-        {member?.pointHistory?.length ? (
-          member.pointHistory
-            .slice(0, 30)
-            .map((history) => (
-              <div
-                key={history.id}
-                className="flex justify-between gap-3 border-t border-black/10 py-2 first:border-t-0"
-              >
-                <div>
-                  <div className="text-sm">
-                    {history.description}
-                  </div>
-                  <div className="text-xs text-subtitle">
-                    {formatDate(
-                      history.createdAt,
-                    )}
-                  </div>
-                </div>
+        {showHistory && (
+          <div className="border-t border-black/10 px-4 pb-2">
+            {member?.pointHistory?.length ? (
+              member.pointHistory
+                .slice(0, 30)
+                .map((history) => (
+                  <div
+                    key={history.id}
+                    className="flex justify-between gap-3 border-t border-black/10 py-3 first:border-t-0"
+                  >
+                    <div>
+                      <div className="text-sm">
+                        {history.description}
+                      </div>
+                      <div className="text-xs text-subtitle">
+                        {formatDate(history.createdAt)}
+                      </div>
+                    </div>
 
-                <div
-                  className={
-                    history.points >= 0
-                      ? "font-medium text-primary"
-                      : "font-medium text-red-500"
-                  }
-                >
-                  {history.points >= 0
-                    ? "+"
-                    : ""}
-                  {history.points}
-                </div>
+                    <div
+                      className={
+                        history.points >= 0
+                          ? "font-medium text-primary"
+                          : "font-medium text-red-500"
+                      }
+                    >
+                      {history.points >= 0 ? "+" : ""}
+                      {history.points}
+                    </div>
+                  </div>
+                ))
+            ) : (
+              <div className="py-3 text-sm text-subtitle">
+                Chưa có giao dịch điểm.
               </div>
-            ))
-        ) : (
-          <div className="text-sm text-subtitle">
-            Chưa có giao dịch điểm.
+            )}
           </div>
         )}
       </div>
