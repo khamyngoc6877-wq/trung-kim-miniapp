@@ -87,7 +87,15 @@ export const userInfoState = atom<Promise<UserInfo | undefined>>(
           : 0,
         registeredAt: registeredAt.toISOString(),
         pointsExpireAt: pointsExpireAt.toISOString(),
-      };
+
+        // Giữ lại dữ liệu hội viên do backend/Supabase trả về.
+        pointHistory: Array.isArray((parsed as any).pointHistory)
+          ? (parsed as any).pointHistory
+          : [],
+        vouchers: Array.isArray((parsed as any).vouchers)
+          ? (parsed as any).vouchers
+          : [],
+      } as UserInfo;
 
       // Nâng cấp dữ liệu cũ để lần sau không còn dùng ngày/điểm mẫu.
       localStorage.setItem(
