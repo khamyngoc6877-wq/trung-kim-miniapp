@@ -2,6 +2,7 @@ import { translate } from "@/i18n/translate";
 import { createCheckoutPayment } from "@/services/payment.service";
 import { rememberCustomerOrderId } from "@/services/order-history.service";
 import type { PaymentMethod } from "@/types/payment";
+import CONFIG from "@/config";
 
 const API_URL = String(import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
@@ -23,6 +24,8 @@ type CheckoutInput = {
   shippingAddress?: unknown;
   paymentMethod: PaymentMethod;
   items: CheckoutItem[];
+  memberId?: string;
+  memberPhone?: string;
 };
 
 type MerchantOrder = {
@@ -42,7 +45,7 @@ async function createMerchantOrder(input: CheckoutInput): Promise<MerchantOrder>
     response = await fetch(`${API_URL}/api/orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify((() => { try { const m=JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USER_INFO)||"null"); return {...input,memberId:m?.id,memberPhone:m?.phone}; } catch { return input; } })()),
     });
   } catch (error) {
     console.error("Create merchant order network error", error);

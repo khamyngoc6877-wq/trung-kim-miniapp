@@ -15,6 +15,7 @@ import {
   type ShippingArea,
   type ShippingMethod,
 } from "../services/order.service.js";
+import { addOrderPoints } from "../services/member.service.js";
 
 export async function createOrder(req: Request, res: Response): Promise<void> {
   try {
@@ -28,6 +29,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       paymentMethod?: PaymentMethod;
       items?: OrderItem[];
       voucherCode?: string;
+      memberId?: string;
+      memberPhone?: string;
     };
 
     const subtotal = Number(body.subtotal);
@@ -109,6 +112,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       id,
       code,
       subtotal,
+      memberId: String(body.memberId ?? "").trim() || undefined,
+      memberPhone: String(body.memberPhone ?? "").trim() || undefined,
       shippingFee,
       discountAmount,
       voucherCode: voucherCode || undefined,
@@ -204,13 +209,18 @@ export async function adminUpdateOrderStatus(
       return;
     }
 
+    const previous = await findOrderById(orderId);
     const order = await updateOrderStatus(orderId, status);
     if (!order) {
       res.status(404).json({ message: "Không tìm thấy đơn hàng" });
       return;
     }
 
-    res.status(200).json(order);
+    let pointsResult: unknown = undefined;
+    if (status === "completed" && previous?.orderStatus !== "completed" && order.memberId) {
+      pointsResult = await addOrderPoints(order.memberId, order.id, order.subtotal);
+    }
+    res.status(200).json({ ...order, pointsResult });
   } catch (error) {
     console.error("Admin update order status error", error);
     res.status(500).json({

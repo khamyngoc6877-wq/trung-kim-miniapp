@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { consumeVoucher, validateVoucher, } from "../services/voucher.service.js";
 import { findOrderById, listOrders, saveOrder, updateOrderStatus, } from "../services/order.service.js";
+import { addOrderPoints } from "../services/member.service.js";
 export async function createOrder(req, res) {
     try {
         const body = req.body;
@@ -70,6 +71,8 @@ export async function createOrder(req, res) {
             id,
             code,
             subtotal,
+            memberId: String(body.memberId ?? "").trim() || undefined,
+            memberPhone: String(body.memberPhone ?? "").trim() || undefined,
             shippingFee,
             discountAmount,
             voucherCode: voucherCode || undefined,
@@ -154,12 +157,17 @@ export async function adminUpdateOrderStatus(req, res) {
             res.status(400).json({ message: "Trạng thái đơn hàng không hợp lệ" });
             return;
         }
+        const previous = await findOrderById(orderId);
         const order = await updateOrderStatus(orderId, status);
         if (!order) {
             res.status(404).json({ message: "Không tìm thấy đơn hàng" });
             return;
         }
-        res.status(200).json(order);
+        let pointsResult = undefined;
+        if (status === "completed" && previous?.orderStatus !== "completed" && order.memberId) {
+            pointsResult = await addOrderPoints(order.memberId, order.id, order.subtotal);
+        }
+        res.status(200).json({ ...order, pointsResult });
     }
     catch (error) {
         console.error("Admin update order status error", error);

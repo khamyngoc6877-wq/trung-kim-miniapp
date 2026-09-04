@@ -17,6 +17,8 @@ export type OrderItem = {
 export type StoreOrder = {
   id: string;
   code: string;
+  memberId?: string;
+  memberPhone?: string;
   subtotal: number;
   shippingFee: number;
   discountAmount?: number;
