@@ -1,120 +1,115 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
-const filePath = path.resolve(process.env.ORDER_STORE_FILE || "./data/orders.json");
-let queue = Promise.resolve();
-async function readDb() {
+import { pool } from "../lib/db.js";
+const num = (v) => Number(v ?? 0);
+const iso = (v) => new Date(v).toISOString();
+async function itemsFor(ids) {
+    const m = new Map();
+    if (!ids.length)
+        return m;
+    const r = await pool.query(`select order_id,product_id,product_name,quantity,amount
+     from public.order_items where order_id=any($1::text[]) order by id`, [ids]);
+    for (const x of r.rows) {
+        const a = m.get(x.order_id) ?? [];
+        a.push({ id: x.product_id, name: x.product_name, quantity: num(x.quantity), amount: num(x.amount) });
+        m.set(x.order_id, a);
+    }
+    return m;
+}
+function map(r, items) {
+    return {
+        id: r.id, code: r.code, memberId: r.member_id ?? undefined, memberPhone: r.member_phone ?? undefined,
+        subtotal: num(r.subtotal), shippingFee: num(r.shipping_fee), discountAmount: num(r.discount_amount),
+        voucherCode: r.voucher_code ?? undefined, totalAmount: num(r.total_amount),
+        shippingMethod: r.shipping_method, shippingArea: r.shipping_area ?? undefined,
+        shippingAddress: r.shipping_address ?? undefined, items, paymentMethod: r.payment_method,
+        paymentStatus: r.payment_status, orderStatus: r.order_status ?? "new",
+        checkoutOrderId: r.checkout_order_id ?? undefined,
+        paymentTransactionId: r.payment_transaction_id ?? undefined,
+        providerMethod: r.provider_method ?? undefined, paymentMessage: r.payment_message ?? undefined,
+        createdAt: iso(r.created_at), updatedAt: iso(r.updated_at)
+    };
+}
+async function one(column, value) {
+    const v = String(value).trim();
+    if (!v)
+        return null;
+    const r = await pool.query(`select * from public.orders where ${column}=$1 limit 1`, [v]);
+    if (!r.rows[0])
+        return null;
+    const im = await itemsFor([r.rows[0].id]);
+    return map(r.rows[0], im.get(r.rows[0].id) ?? []);
+}
+export async function saveOrder(o) {
+    const c = await pool.connect();
     try {
-        const content = await fs.readFile(filePath, "utf8");
-        const parsed = JSON.parse(content || "{}");
-        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-            ? parsed
-            : {};
+        await c.query("begin");
+        await c.query(`insert into public.orders
+      (id,code,member_id,member_phone,subtotal,shipping_fee,discount_amount,voucher_code,
+       total_amount,shipping_method,shipping_area,shipping_address,payment_method,payment_status,
+       order_status,checkout_order_id,payment_transaction_id,provider_method,payment_message,created_at,updated_at)
+       values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+       on conflict(id) do update set
+       code=excluded.code,member_id=excluded.member_id,member_phone=excluded.member_phone,
+       subtotal=excluded.subtotal,shipping_fee=excluded.shipping_fee,discount_amount=excluded.discount_amount,
+       voucher_code=excluded.voucher_code,total_amount=excluded.total_amount,
+       shipping_method=excluded.shipping_method,shipping_area=excluded.shipping_area,
+       shipping_address=excluded.shipping_address,payment_method=excluded.payment_method,
+       payment_status=excluded.payment_status,order_status=excluded.order_status,
+       checkout_order_id=excluded.checkout_order_id,payment_transaction_id=excluded.payment_transaction_id,
+       provider_method=excluded.provider_method,payment_message=excluded.payment_message,updated_at=excluded.updated_at`, [o.id, o.code, o.memberId ?? null, o.memberPhone ?? null, o.subtotal, o.shippingFee, o.discountAmount ?? 0,
+            o.voucherCode ?? null, o.totalAmount, o.shippingMethod, o.shippingArea ?? null,
+            o.shippingAddress === undefined ? null : JSON.stringify(o.shippingAddress), o.paymentMethod, o.paymentStatus,
+            o.orderStatus ?? "new", o.checkoutOrderId ?? null, o.paymentTransactionId ?? null, o.providerMethod ?? null,
+            o.paymentMessage ?? null, o.createdAt, o.updatedAt]);
+        await c.query("delete from public.order_items where order_id=$1", [o.id]);
+        for (const x of o.items)
+            await c.query(`insert into public.order_items(order_id,product_id,product_name,quantity,amount) values($1,$2,$3,$4,$5)`, [o.id, String(x.id), x.name, x.quantity, x.amount]);
+        await c.query("commit");
     }
-    catch (error) {
-        if (error.code === "ENOENT")
-            return {};
-        throw error;
+    catch (e) {
+        await c.query("rollback");
+        throw e;
+    }
+    finally {
+        c.release();
     }
 }
-async function writeDb(db) {
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    const tempPath = `${filePath}.tmp`;
-    await fs.writeFile(tempPath, JSON.stringify(db, null, 2), "utf8");
-    await fs.rename(tempPath, filePath);
-}
-function mutate(fn) {
-    const next = queue.then(async () => {
-        const db = await readDb();
-        const result = await fn(db);
-        await writeDb(db);
-        return result;
-    });
-    queue = next.catch(() => undefined);
-    return next;
-}
-export async function saveOrder(order) {
-    await mutate((db) => {
-        db[order.id] = {
-            ...order,
-            orderStatus: order.orderStatus ?? "new",
-        };
-    });
-}
-export async function findOrderById(id) {
-    const order = (await readDb())[String(id).trim()] ?? null;
-    return order
-        ? { ...order, orderStatus: order.orderStatus ?? "new" }
-        : null;
-}
+export const findOrderById = (id) => one("id", id);
 export async function listOrders() {
-    const db = await readDb();
-    return Object.values(db)
-        .map((order) => ({
-        ...order,
-        orderStatus: order.orderStatus ?? "new",
-    }))
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const r = await pool.query("select * from public.orders order by created_at desc");
+    const im = await itemsFor(r.rows.map((x) => x.id));
+    return r.rows.map((x) => map(x, im.get(x.id) ?? []));
 }
 export async function updateOrderStatus(id, status) {
-    return mutate((db) => {
-        const order = db[String(id).trim()];
-        if (!order)
-            return null;
-        order.orderStatus = status;
-        order.updatedAt = new Date().toISOString();
-        return order;
-    });
+    const r = await pool.query("update public.orders set order_status=$2,updated_at=now() where id=$1 returning *", [String(id).trim(), status]);
+    if (!r.rows[0])
+        return null;
+    const im = await itemsFor([r.rows[0].id]);
+    return map(r.rows[0], im.get(r.rows[0].id) ?? []);
 }
 export async function bindCheckoutOrder(merchantOrderId, checkoutOrderId) {
-    return mutate((db) => {
-        const order = db[String(merchantOrderId).trim()];
-        if (!order)
-            throw new Error("Không tìm thấy đơn hàng");
-        order.checkoutOrderId = String(checkoutOrderId).trim();
-        order.updatedAt = new Date().toISOString();
-        return order;
-    });
+    const r = await pool.query("update public.orders set checkout_order_id=$2,updated_at=now() where id=$1 returning *", [String(merchantOrderId).trim(), String(checkoutOrderId).trim()]);
+    if (!r.rows[0])
+        throw new Error("Không tìm thấy đơn hàng");
+    const im = await itemsFor([r.rows[0].id]);
+    return map(r.rows[0], im.get(r.rows[0].id) ?? []);
 }
-export async function findOrderByCheckoutOrderId(id) {
-    const checkoutOrderId = String(id).trim();
-    const db = await readDb();
-    const order = Object.values(db).find((entry) => String(entry.checkoutOrderId ?? "").trim() === checkoutOrderId) ?? null;
-    return order
-        ? { ...order, orderStatus: order.orderStatus ?? "new" }
-        : null;
-}
-export async function findOrderByTransactionId(id) {
-    const transactionId = String(id).trim();
-    const db = await readDb();
-    const order = Object.values(db).find((entry) => String(entry.paymentTransactionId ?? "").trim() === transactionId) ?? null;
-    return order
-        ? { ...order, orderStatus: order.orderStatus ?? "new" }
-        : null;
-}
+export const findOrderByCheckoutOrderId = (id) => one("checkout_order_id", id);
+export const findOrderByTransactionId = (id) => one("payment_transaction_id", id);
 export async function updateCodNotify(input) {
-    return mutate((db) => {
-        const checkoutOrderId = String(input.checkoutOrderId).trim();
-        const order = Object.values(db).find((entry) => String(entry.checkoutOrderId ?? "").trim() === checkoutOrderId);
-        if (!order)
-            return null;
-        order.paymentStatus = "cod_confirmed";
-        order.providerMethod = String(input.providerMethod);
-        order.paymentMessage = "Đơn COD đã được xác nhận";
-        order.updatedAt = new Date().toISOString();
-        return order;
-    });
+    const r = await pool.query(`update public.orders set payment_status='cod_confirmed',provider_method=$2,
+     payment_message='Đơn COD đã được xác nhận',updated_at=now()
+     where checkout_order_id=$1 returning *`, [String(input.checkoutOrderId).trim(), String(input.providerMethod)]);
+    if (!r.rows[0])
+        return null;
+    const im = await itemsFor([r.rows[0].id]);
+    return map(r.rows[0], im.get(r.rows[0].id) ?? []);
 }
 export async function updateOnlinePayment(input) {
-    return mutate((db) => {
-        const order = db[String(input.merchantOrderId).trim()];
-        if (!order)
-            throw new Error("Không tìm thấy đơn hàng");
-        order.checkoutOrderId = String(input.checkoutOrderId).trim();
-        order.paymentTransactionId = String(input.transId).trim();
-        order.providerMethod = input.providerMethod;
-        order.paymentMessage = input.message;
-        order.paymentStatus = input.success ? "paid" : "failed";
-        order.updatedAt = new Date().toISOString();
-        return order;
-    });
+    const r = await pool.query(`update public.orders set checkout_order_id=$2,payment_transaction_id=$3,provider_method=$4,
+     payment_message=$5,payment_status=$6,updated_at=now() where id=$1 returning *`, [String(input.merchantOrderId).trim(), String(input.checkoutOrderId).trim(), String(input.transId).trim(),
+        input.providerMethod ?? null, input.message ?? null, input.success ? "paid" : "failed"]);
+    if (!r.rows[0])
+        throw new Error("Không tìm thấy đơn hàng");
+    const im = await itemsFor([r.rows[0].id]);
+    return map(r.rows[0], im.get(r.rows[0].id) ?? []);
 }
