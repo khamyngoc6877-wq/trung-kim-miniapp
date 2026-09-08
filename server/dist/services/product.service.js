@@ -1,176 +1,149 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import crypto from "node:crypto";
-const DATA_FILE = process.env.PRODUCT_STORE_FILE ||
-    path.resolve(process.cwd(), "data/products.json");
-async function ensureStore() {
-    await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-    try {
-        await fs.access(DATA_FILE);
-    }
-    catch {
-        await fs.writeFile(DATA_FILE, "[]", "utf8");
-    }
-}
-async function readAll() {
-    await ensureStore();
-    const raw = await fs.readFile(DATA_FILE, "utf8");
-    try {
-        const value = JSON.parse(raw || "[]");
-        return Array.isArray(value)
-            ? value
-            : [];
-    }
-    catch {
-        return [];
-    }
-}
-async function writeAll(products) {
-    await ensureStore();
-    await fs.writeFile(DATA_FILE, JSON.stringify(products, null, 2), "utf8");
-}
+import { pool } from "../lib/db.js";
+const n = (v) => Number(v ?? 0);
+const optNum = (v) => v === null || v === undefined ? undefined : Number(v);
+const iso = (v) => new Date(v).toISOString();
 function normalizeVariants(variants = []) {
-    return variants.map((variant) => ({
-        ...variant,
-        id: String(variant.id ?? "").trim() ||
-            crypto.randomUUID(),
-        name: String(variant.name ?? "").trim(),
-        sku: variant.sku
-            ? String(variant.sku).trim()
-            : undefined,
-        price: Number(variant.price ?? 0),
-        stock: Number(variant.stock ?? 0),
-        compareAtPrice: variant.compareAtPrice !== undefined
-            ? Number(variant.compareAtPrice)
-            : undefined,
+    return variants.map((v) => ({
+        ...v,
+        id: String(v.id ?? "").trim() || crypto.randomUUID(),
+        name: String(v.name ?? "").trim(),
+        sku: v.sku ? String(v.sku).trim() : undefined,
+        price: n(v.price),
+        stock: n(v.stock),
+        compareAtPrice: v.compareAtPrice !== undefined ? n(v.compareAtPrice) : undefined,
     }));
 }
+function mapProduct(row, variants) {
+    const images = Array.isArray(row.images) ? row.images.map(String) : [];
+    return {
+        id: row.id,
+        sku: row.sku,
+        name: row.name,
+        nameZh: row.name_zh ?? undefined,
+        category: row.category,
+        brand: row.brand ?? undefined,
+        price: n(row.price),
+        compareAtPrice: optNum(row.compare_at_price),
+        stock: n(row.stock),
+        description: row.description ?? undefined,
+        specifications: row.specifications,
+        images,
+        variants: variants.map((v) => ({
+            id: v.id,
+            name: v.name,
+            sku: v.sku ?? undefined,
+            price: n(v.price),
+            stock: n(v.stock),
+            compareAtPrice: optNum(v.compare_at_price),
+        })),
+        status: row.status,
+        createdAt: iso(row.created_at),
+        updatedAt: iso(row.updated_at),
+    };
+}
+async function variantsFor(productIds) {
+    const map = new Map();
+    if (!productIds.length)
+        return map;
+    const result = await pool.query(`select id,product_id,name,sku,price,stock,compare_at_price
+       from public.product_variants
+      where product_id=any($1::text[])
+      order by created_at asc`, [productIds]);
+    for (const v of result.rows) {
+        const list = map.get(v.product_id) ?? [];
+        list.push(v);
+        map.set(v.product_id, list);
+    }
+    return map;
+}
 export async function listProducts(includeHidden = false) {
-    const products = await readAll();
-    return products
-        .filter((product) => includeHidden ||
-        product.status === "active")
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const result = await pool.query(`select * from public.products
+      ${includeHidden ? "" : "where status='active'"}
+      order by updated_at desc`);
+    const vm = await variantsFor(result.rows.map((r) => r.id));
+    return result.rows.map((r) => mapProduct(r, vm.get(r.id) ?? []));
 }
 export async function getProduct(id) {
     const productId = String(id).trim();
-    if (!productId) {
+    if (!productId)
         return undefined;
+    const result = await pool.query(`select * from public.products where id=$1 limit 1`, [productId]);
+    const row = result.rows[0];
+    if (!row)
+        return undefined;
+    const vm = await variantsFor([row.id]);
+    return mapProduct(row, vm.get(row.id) ?? []);
+}
+async function replaceVariants(client, productId, variants) {
+    await client.query(`delete from public.product_variants where product_id=$1`, [productId]);
+    for (const v of normalizeVariants(variants)) {
+        await client.query(`insert into public.product_variants
+       (id,product_id,name,sku,price,stock,compare_at_price,created_at,updated_at)
+       values($1,$2,$3,$4,$5,$6,$7,now(),now())`, [v.id, productId, v.name, v.sku ?? null, v.price, v.stock, v.compareAtPrice ?? null]);
     }
-    const products = await readAll();
-    return products.find((product) => product.id === productId);
 }
 export async function createProduct(input) {
-    const products = await readAll();
-    const now = new Date().toISOString();
-    const product = {
-        id: crypto.randomUUID(),
-        sku: String(input.sku ?? "").trim(),
-        name: String(input.name ?? "").trim(),
-        nameZh: input.nameZh
-            ? String(input.nameZh).trim()
-            : undefined,
-        category: String(input.category ?? "").trim(),
-        brand: input.brand
-            ? String(input.brand).trim()
-            : undefined,
-        price: Number(input.price ?? 0),
-        compareAtPrice: input.compareAtPrice !== undefined
-            ? Number(input.compareAtPrice)
-            : undefined,
-        stock: Number(input.stock ?? 0),
-        description: input.description,
-        specifications: input.specifications,
-        images: Array.isArray(input.images)
-            ? input.images
-                .map((image) => String(image).trim())
-                .filter(Boolean)
-            : [],
-        variants: normalizeVariants(Array.isArray(input.variants)
-            ? input.variants
-            : []),
-        status: input.status === "hidden"
-            ? "hidden"
-            : "active",
-        createdAt: now,
-        updatedAt: now,
-    };
-    products.push(product);
-    await writeAll(products);
-    return product;
+    const id = crypto.randomUUID();
+    const client = await pool.connect();
+    try {
+        await client.query("begin");
+        await client.query(`insert into public.products
+       (id,sku,name,name_zh,category,brand,price,compare_at_price,stock,description,
+        specifications,images,status,created_at,updated_at)
+       values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,now(),now())`, [id, String(input.sku ?? "").trim(), String(input.name ?? "").trim(),
+            input.nameZh ? String(input.nameZh).trim() : null, String(input.category ?? "").trim(),
+            input.brand ? String(input.brand).trim() : null, n(input.price),
+            input.compareAtPrice !== undefined ? n(input.compareAtPrice) : null, n(input.stock),
+            input.description ?? null,
+            input.specifications === undefined ? null : JSON.stringify(input.specifications),
+            JSON.stringify(Array.isArray(input.images) ? input.images.map(String).filter(Boolean) : []),
+            input.status === "hidden" ? "hidden" : "active"]);
+        await replaceVariants(client, id, Array.isArray(input.variants) ? input.variants : []);
+        await client.query("commit");
+    }
+    catch (e) {
+        await client.query("rollback");
+        throw e;
+    }
+    finally {
+        client.release();
+    }
+    return (await getProduct(id));
 }
 export async function updateProduct(id, input) {
-    const products = await readAll();
-    const index = products.findIndex((product) => product.id === String(id).trim());
-    if (index < 0) {
+    const current = await getProduct(id);
+    if (!current)
         return undefined;
+    const next = { ...current, ...input };
+    const client = await pool.connect();
+    try {
+        await client.query("begin");
+        await client.query(`update public.products set
+       sku=$2,name=$3,name_zh=$4,category=$5,brand=$6,price=$7,compare_at_price=$8,
+       stock=$9,description=$10,specifications=$11::jsonb,images=$12::jsonb,status=$13,updated_at=now()
+       where id=$1`, [current.id, String(next.sku ?? "").trim(), String(next.name ?? "").trim(),
+            next.nameZh ? String(next.nameZh).trim() : null, String(next.category ?? "").trim(),
+            next.brand ? String(next.brand).trim() : null, n(next.price),
+            next.compareAtPrice !== undefined ? n(next.compareAtPrice) : null, n(next.stock),
+            next.description ?? null,
+            next.specifications === undefined ? null : JSON.stringify(next.specifications),
+            JSON.stringify(Array.isArray(next.images) ? next.images.map(String).filter(Boolean) : []),
+            next.status === "hidden" ? "hidden" : "active"]);
+        if (input.variants !== undefined)
+            await replaceVariants(client, current.id, input.variants);
+        await client.query("commit");
     }
-    const current = products[index];
-    if (!current) {
-        return undefined;
+    catch (e) {
+        await client.query("rollback");
+        throw e;
     }
-    const next = {
-        id: current.id,
-        sku: input.sku !== undefined
-            ? String(input.sku).trim()
-            : current.sku,
-        name: input.name !== undefined
-            ? String(input.name).trim()
-            : current.name,
-        nameZh: input.nameZh !== undefined
-            ? String(input.nameZh).trim() ||
-                undefined
-            : current.nameZh,
-        category: input.category !== undefined
-            ? String(input.category).trim()
-            : current.category,
-        brand: input.brand !== undefined
-            ? String(input.brand).trim() ||
-                undefined
-            : current.brand,
-        price: input.price !== undefined
-            ? Number(input.price)
-            : current.price,
-        compareAtPrice: input.compareAtPrice !== undefined
-            ? Number(input.compareAtPrice)
-            : current.compareAtPrice,
-        stock: input.stock !== undefined
-            ? Number(input.stock)
-            : current.stock,
-        description: input.description !== undefined
-            ? input.description
-            : current.description,
-        specifications: input.specifications !== undefined
-            ? input.specifications
-            : current.specifications,
-        images: input.images !== undefined
-            ? input.images
-                .map((image) => String(image).trim())
-                .filter(Boolean)
-            : current.images,
-        variants: input.variants !== undefined
-            ? normalizeVariants(input.variants)
-            : current.variants,
-        status: input.status !== undefined
-            ? input.status
-            : current.status,
-        createdAt: current.createdAt,
-        updatedAt: new Date().toISOString(),
-    };
-    products[index] = next;
-    await writeAll(products);
-    return next;
+    finally {
+        client.release();
+    }
+    return getProduct(current.id);
 }
 export async function deleteProduct(id) {
-    const productId = String(id).trim();
-    if (!productId) {
-        return false;
-    }
-    const products = await readAll();
-    const next = products.filter((product) => product.id !== productId);
-    if (next.length === products.length) {
-        return false;
-    }
-    await writeAll(next);
-    return true;
+    const result = await pool.query(`delete from public.products where id=$1 returning id`, [String(id).trim()]);
+    return (result.rowCount ?? 0) > 0;
 }
