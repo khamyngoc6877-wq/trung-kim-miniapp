@@ -20,13 +20,33 @@ app.disable("x-powered-by");
 const configuredOrigin =
   process.env.MINI_APP_ORIGIN?.trim();
 
+const allowedOrigins = [
+  configuredOrigin,
+  "http://localhost:2999",
+  "http://localhost:3000",
+  "http://127.0.0.1:2999",
+  "http://127.0.0.1:3000",
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin:
-      configuredOrigin &&
-      configuredOrigin !== "*"
-        ? configuredOrigin
-        : true,
+    origin: (origin, callback) => {
+      // Cho phép request không có Origin (Zalo Mini App/native)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (
+        configuredOrigin === "*" ||
+        allowedOrigins.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error(`CORS blocked origin: ${origin}`)
+      );
+    },
 
     methods: [
       "GET",
