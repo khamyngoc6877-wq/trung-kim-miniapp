@@ -79,12 +79,88 @@ export async function listOrders() {
     const im = await itemsFor(r.rows.map((x) => x.id));
     return r.rows.map((x) => map(x, im.get(x.id) ?? []));
 }
+function variantNameFromOrderItemName(name) {
+    const marker = " - Quy cách:";
+    const index = String(name ?? "").lastIndexOf(marker);
+    if (index < 0)
+        return undefined;
+    const value = String(name).slice(index + marker.length).trim();
+    return value || undefined;
+}
 export async function updateOrderStatus(id, status) {
-    const r = await pool.query("update public.orders set order_status=$2,updated_at=now() where id=$1 returning *", [String(id).trim(), status]);
-    if (!r.rows[0])
+    const orderId = String(id).trim();
+    if (!orderId)
         return null;
-    const im = await itemsFor([r.rows[0].id]);
-    return map(r.rows[0], im.get(r.rows[0].id) ?? []);
+    const c = await pool.connect();
+    try {
+        await c.query("begin");
+        const orderResult = await c.query(`select * from public.orders where id=$1 limit 1 for update`, [orderId]);
+        const current = orderResult.rows[0];
+        if (!current) {
+            await c.query("rollback");
+            return null;
+        }
+        // Chỉ trừ tồn kho đúng 1 lần khi đơn chuyển sang completed.
+        if (status === "completed" && !current.stock_deducted_at) {
+            const itemResult = await c.query(`select product_id, product_name, quantity
+           from public.order_items
+          where order_id=$1
+          order by id
+          for update`, [orderId]);
+            for (const item of itemResult.rows) {
+                const productId = String(item.product_id ?? "").trim();
+                const quantity = Math.floor(Number(item.quantity ?? 0));
+                if (!productId || !Number.isInteger(quantity) || quantity <= 0) {
+                    throw new Error(`INVALID_ORDER_ITEM:${productId}`);
+                }
+                const variantName = variantNameFromOrderItemName(String(item.product_name ?? ""));
+                if (variantName) {
+                    const vr = await c.query(`select id, name, stock
+               from public.product_variants
+              where product_id=$1 and name=$2
+              limit 1
+              for update`, [productId, variantName]);
+                    const variant = vr.rows[0];
+                    if (!variant) {
+                        throw new Error(`VARIANT_NOT_FOUND:${productId}:${variantName}`);
+                    }
+                    if (Number(variant.stock ?? 0) < quantity) {
+                        throw new Error(`INSUFFICIENT_STOCK:${productId}:${variantName}`);
+                    }
+                    await c.query(`update public.product_variants
+                set stock=stock-$2, updated_at=now()
+              where id=$1`, [variant.id, quantity]);
+                }
+                else {
+                    const pr = await c.query(`select id, stock from public.products where id=$1 limit 1 for update`, [productId]);
+                    const product = pr.rows[0];
+                    if (!product)
+                        throw new Error(`PRODUCT_NOT_FOUND:${productId}`);
+                    if (Number(product.stock ?? 0) < quantity) {
+                        throw new Error(`INSUFFICIENT_STOCK:${productId}`);
+                    }
+                    await c.query(`update public.products
+                set stock=stock-$2, updated_at=now()
+              where id=$1`, [productId, quantity]);
+                }
+            }
+            await c.query(`update public.orders set stock_deducted_at=now() where id=$1`, [orderId]);
+        }
+        const updated = await c.query(`update public.orders
+          set order_status=$2, updated_at=now()
+        where id=$1
+        returning *`, [orderId, status]);
+        await c.query("commit");
+        const im = await itemsFor([orderId]);
+        return map(updated.rows[0], im.get(orderId) ?? []);
+    }
+    catch (e) {
+        await c.query("rollback");
+        throw e;
+    }
+    finally {
+        c.release();
+    }
 }
 export async function bindCheckoutOrder(merchantOrderId, checkoutOrderId) {
     const r = await pool.query("update public.orders set checkout_order_id=$2,updated_at=now() where id=$1 returning *", [String(merchantOrderId).trim(), String(checkoutOrderId).trim()]);
