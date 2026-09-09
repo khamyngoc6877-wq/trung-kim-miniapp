@@ -185,6 +185,80 @@ export async function updateOrderStatus(id:string,status:OrderStatus){
       );
     }
 
+    // Nếu đơn đã từng trừ tồn kho rồi chuyển sang cancelled,
+    // cộng trả tồn kho đúng 1 lần và xóa dấu stock_deducted_at.
+    if (status === "cancelled" && current.stock_deducted_at) {
+      const itemResult = await c.query(
+        `select product_id, product_name, quantity
+           from public.order_items
+          where order_id=$1
+          order by id
+          for update`,
+        [orderId],
+      );
+
+      for (const item of itemResult.rows) {
+        const productId = String(item.product_id ?? "").trim();
+        const quantity = Math.floor(Number(item.quantity ?? 0));
+        if (!productId || !Number.isInteger(quantity) || quantity <= 0) {
+          throw new Error(`INVALID_ORDER_ITEM:${productId}`);
+        }
+
+        const variantName = variantNameFromOrderItemName(
+          String(item.product_name ?? ""),
+        );
+
+        if (variantName) {
+          const vr = await c.query(
+            `select id, name, stock
+               from public.product_variants
+              where product_id=$1 and name=$2
+              limit 1
+              for update`,
+            [productId, variantName],
+          );
+
+          const variant = vr.rows[0];
+          if (!variant) {
+            throw new Error(`VARIANT_NOT_FOUND:${productId}:${variantName}`);
+          }
+
+          await c.query(
+            `update public.product_variants
+                set stock=stock+$2, updated_at=now()
+              where id=$1`,
+            [variant.id, quantity],
+          );
+        } else {
+          const pr = await c.query(
+            `select id, stock
+               from public.products
+              where id=$1
+              limit 1
+              for update`,
+            [productId],
+          );
+
+          const product = pr.rows[0];
+          if (!product) {
+            throw new Error(`PRODUCT_NOT_FOUND:${productId}`);
+          }
+
+          await c.query(
+            `update public.products
+                set stock=stock+$2, updated_at=now()
+              where id=$1`,
+            [productId, quantity],
+          );
+        }
+      }
+
+      await c.query(
+        `update public.orders set stock_deducted_at=null where id=$1`,
+        [orderId],
+      );
+    }
+
     const updated = await c.query(
       `update public.orders
           set order_status=$2, updated_at=now()
