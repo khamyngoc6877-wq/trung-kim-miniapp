@@ -10,8 +10,17 @@ export interface UserInfo {
   pointsExpireAt?: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  name: string;
+  sku?: string;
+  price: number;
+  stock: number;
+  compareAtPrice?: number;
+}
+
 export interface Product {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   originalPrice?: number;
@@ -20,6 +29,10 @@ export interface Product {
   detail?: string;
   sizes?: Size[];
   colors?: Color[];
+  variants?: ProductVariant[];
+  categoryId?: string | number;
+  sku?: string;
+  stock?: number;
 }
 
 export interface Category {
@@ -31,6 +44,7 @@ export interface Category {
 export interface CartItem {
   product: Product;
   quantity: number;
+  variant?: ProductVariant;
 }
 
 export type Cart = CartItem[];
@@ -64,7 +78,12 @@ export type Delivery =
       stationId: number;
     };
 
-export type OrderStatus = "pending" | "shipping" | "completed";
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "shipping"
+  | "completed"
+  | "cancelled";
 export type PaymentStatus = "pending" | "success" | "failed";
 
 export interface Order {

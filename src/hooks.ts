@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { MutableRefObject, useLayoutEffect, useMemo, useState } from "react";
+import { MutableRefObject, useLayoutEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { UIMatch, useMatches, useNavigate } from "react-router-dom";
 import {
@@ -9,7 +9,7 @@ import {
   userInfoKeyState,
   userInfoState,
 } from "@/state";
-import { Product } from "@/types";
+import { Product, ProductVariant } from "@/types";
 import { getConfig } from "@/utils/template";
 import { authorize, createOrder, openChat } from "zmp-sdk/apis";
 import { useAtomCallback } from "jotai/utils";
@@ -114,44 +114,161 @@ export function useRequestInformation() {
   };
 }
 
-export function useAddToCart(product: Product) {
+export function useAddToCart(
+  product?: Product,
+  variant?: ProductVariant,
+) {
   const [cart, setCart] = useAtom(cartState);
   const { t } = useTranslation();
 
-  const currentCartItem = useMemo(
-    () => cart.find((item) => item.product.id === product.id),
-    [cart, product.id]
-  );
+  const getItemKey = (
+    itemProduct?: Product,
+    itemVariant?: ProductVariant,
+  ) => {
+    const productId = String(itemProduct?.id ?? "");
+    const variantKey = String(
+      itemVariant?.id ??
+        itemVariant?.sku ??
+        itemVariant?.name ??
+        "",
+    ).trim();
+
+    return `${productId}::${variantKey}`;
+  };
+
+  const targetKey = getItemKey(product, variant);
+
+  // Chặn trường hợp một lần bấm nhưng event bị phát 2 lần liên tiếp.
+  const lastAddRef = useRef<{ key: string; time: number }>({
+    key: "",
+    time: 0,
+  });
+
+  const currentCartItem = useMemo(() => {
+    if (!product) {
+      return undefined;
+    }
+
+    return cart.find(
+      (item) =>
+        getItemKey(item.product, item.variant) === targetKey,
+    );
+  }, [cart, product, variant, targetKey]);
 
   const addToCart = (
     quantity: number | ((oldQuantity: number) => number),
-    options?: { toast: boolean }
+    options?: { toast: boolean },
   ) => {
-    setCart((cart) => {
-      const newQuantity =
-        typeof quantity === "function"
-          ? quantity(currentCartItem?.quantity ?? 0)
-          : quantity;
-      if (newQuantity <= 0) {
-        cart.splice(cart.indexOf(currentCartItem!), 1);
-      } else {
-        if (currentCartItem) {
-          currentCartItem.quantity = newQuantity;
-        } else {
-          cart.push({
-            product,
-            quantity: newQuantity,
+    if (!product) {
+      return;
+    }
+
+    if (variant && Number(variant.stock) <= 0) {
+      toast.error("Quy cách này đã hết hàng.");
+      return;
+    }
+
+    const now = Date.now();
+    if (
+      lastAddRef.current.key === targetKey &&
+      now - lastAddRef.current.time < 350
+    ) {
+      return;
+    }
+    lastAddRef.current = {
+      key: targetKey,
+      time: now,
+    };
+
+    setCart((oldCart) => {
+      /*
+       * Chuẩn hóa giỏ trước khi thêm:
+       * - cùng sản phẩm + cùng quy cách => 1 dòng duy nhất
+       * - giữ lại tổng số lượng nếu trước đó đã bị tạo trùng
+       */
+      const merged = new Map<string, (typeof oldCart)[number]>();
+
+      for (const item of oldCart) {
+        const key = getItemKey(item.product, item.variant);
+        const existing = merged.get(key);
+
+        if (existing) {
+          merged.set(key, {
+            ...existing,
+            quantity:
+              Number(existing.quantity || 0) +
+              Number(item.quantity || 0),
           });
+        } else {
+          merged.set(key, { ...item });
         }
       }
-      return [...cart];
+
+      const normalizedCart = Array.from(merged.values());
+      const existingIndex = normalizedCart.findIndex(
+        (item) =>
+          getItemKey(item.product, item.variant) === targetKey,
+      );
+
+      const oldQuantity =
+        existingIndex >= 0
+          ? Number(normalizedCart[existingIndex]?.quantity ?? 0)
+          : 0;
+
+      /*
+       * Khi gọi addToCart(1), số 1 là "thêm 1",
+       * không phải "đặt số lượng thành 1".
+       */
+      const newQuantity =
+        typeof quantity === "function"
+          ? quantity(oldQuantity)
+          : oldQuantity + Number(quantity);
+
+      if (newQuantity <= 0) {
+        return normalizedCart.filter(
+          (item) =>
+            getItemKey(item.product, item.variant) !== targetKey,
+        );
+      }
+
+      if (existingIndex >= 0) {
+        return normalizedCart.map((item, index) =>
+          index === existingIndex
+            ? { ...item, quantity: newQuantity }
+            : item,
+        );
+      }
+
+      const productForCart: Product = variant
+        ? {
+            ...product,
+            price: Number(variant.price),
+            originalPrice:
+              variant.compareAtPrice !== undefined
+                ? Number(variant.compareAtPrice)
+                : product.originalPrice,
+          }
+        : product;
+
+      return [
+        ...normalizedCart,
+        {
+          product: productForCart,
+          quantity: newQuantity,
+          variant,
+        },
+      ];
     });
+
     if (options?.toast) {
       toast.success(t("product", "addedToCart"));
     }
   };
 
-  return { addToCart, cartQuantity: currentCartItem?.quantity ?? 0 };
+  return {
+    addToCart,
+    cartQuantity: currentCartItem?.quantity ?? 0,
+  };
 }
 
 export function useCustomerSupport() {

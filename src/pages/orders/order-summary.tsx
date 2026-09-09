@@ -43,6 +43,12 @@ function OrderSummary(props: { order: Order; full?: boolean }) {
         }
       }}
     >
+      <div className="flex justify-between items-center px-4 pt-2">
+        <span className="text-xs text-subtitle">{t("orders", "orderStatus")}</span>
+        <span className={`text-xs font-medium ${props.order.status === "cancelled" ? "text-danger" : props.order.status === "completed" ? "text-primary" : ""}`}>
+          {t("orders", props.order.status)}
+        </span>
+      </div>
       <div className="w-full">
         <CollapsibleOrderItems
           items={props.order.items}

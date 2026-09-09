@@ -29,6 +29,99 @@ import {
   type BackendOrder,
 } from "@/services/order-history.service";
 
+const PRODUCT_API_URL =
+  "https://trung-kim-backend.onrender.com/api/products";
+
+type BackendProductVariant = {
+  id: string;
+  name: string;
+  sku?: string | null;
+  price?: number | string | null;
+  stock?: number | string | null;
+  compareAtPrice?: number | string | null;
+};
+
+type BackendProduct = {
+  id: string | number;
+  sku?: string | null;
+  name: string;
+  category?: string | number | null;
+  price?: number | string | null;
+  compareAtPrice?: number | string | null;
+  stock?: number | string | null;
+  description?: string | null;
+  specifications?: unknown;
+  images?: string[];
+  variants?: BackendProductVariant[];
+  status?: string | null;
+};
+
+function toNumber(value: unknown, fallback = 0) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+}
+
+function mapBackendProduct(
+  product: BackendProduct,
+  categories: Category[],
+): Product {
+  const rawCategoryId = product.category ?? "";
+  const numericCategoryId = Number(rawCategoryId);
+
+  const category =
+    categories.find(
+      (item) => String(item.id) === String(rawCategoryId),
+    ) ??
+    ({
+      id: Number.isFinite(numericCategoryId)
+        ? numericCategoryId
+        : 0,
+      name: String(rawCategoryId ?? ""),
+      image: "",
+    } satisfies Category);
+
+  const price = toNumber(product.price);
+  const compareAtPrice = toNumber(product.compareAtPrice);
+
+  return {
+    id: product.id,
+    sku: String(product.sku ?? ""),
+    name: String(product.name ?? ""),
+    price,
+    originalPrice:
+      compareAtPrice > 0 ? compareAtPrice : undefined,
+    stock: toNumber(product.stock),
+    image:
+      Array.isArray(product.images) && product.images.length > 0
+        ? String(product.images[0] ?? "")
+        : "",
+    category,
+    categoryId: rawCategoryId,
+    detail: String(product.description ?? ""),
+    variants: Array.isArray(product.variants)
+      ? product.variants.map((variant) => {
+          const variantCompareAtPrice = toNumber(
+            variant.compareAtPrice,
+          );
+
+          return {
+            id: String(variant.id),
+            name: String(variant.name ?? ""),
+            sku: variant.sku
+              ? String(variant.sku)
+              : undefined,
+            price: toNumber(variant.price, price),
+            stock: toNumber(variant.stock),
+            compareAtPrice:
+              variantCompareAtPrice > 0
+                ? variantCompareAtPrice
+                : undefined,
+          };
+        })
+      : [],
+  };
+}
+
 export const userInfoKeyState = atom(0);
 
 export const userInfoState = atom<Promise<UserInfo | undefined>>(
@@ -133,33 +226,76 @@ export const categoriesStateUpwrapped = unwrap(
   (prev) => prev ?? []
 );
 
-export const productsState = atom(async (get) => {
+export const productsState = atomWithRefresh(async (get) => {
   const categories = await get(categoriesState);
-  const products = await requestWithFallback<
-    (Product & { categoryId: number })[]
-  >("/products", []);
-  return products.map((product) => ({
-    ...product,
-    category: categories.find(
-      (category) => category.id === product.categoryId
-    )!,
-  }));
+
+  try {
+    // Luôn lấy tồn kho mới nhất từ backend/Supabase khi productsState được refresh.
+    // cache: "no-store" tránh Mini App/WebView giữ lại dữ liệu tồn kho cũ.
+    const response = await fetch(
+      `${PRODUCT_API_URL}?_=${Date.now()}`,
+      {
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Không tải được sản phẩm: HTTP ${response.status}`,
+      );
+    }
+
+    const data = (await response.json()) as BackendProduct[];
+
+    if (!Array.isArray(data)) {
+      throw new Error("API sản phẩm không trả về mảng dữ liệu.");
+    }
+
+    return data
+      .filter((product) => product.status !== "inactive")
+      .map((product) =>
+        mapBackendProduct(product, categories),
+      );
+  } catch (error) {
+    console.warn(
+      "Không tải được sản phẩm từ backend, dùng dữ liệu local dự phòng:",
+      error,
+    );
+
+    const fallbackProducts = await requestWithFallback<
+      (Product & { categoryId: string | number })[]
+    >("/products", []);
+
+    return fallbackProducts.map((product) => ({
+      ...product,
+      category:
+        categories.find(
+          (category) =>
+            String(category.id) ===
+            String(product.categoryId),
+        ) ??
+        product.category,
+    }));
+  }
 });
 
 export const flashSaleProductsState = atom((get) => get(productsState));
 
 export const recommendedProductsState = atom((get) => get(productsState));
 
-export const productState = atomFamily((id: number) =>
-  atom(async (get) => {
-    const products = await get(productsState);
-    return products.find((product) => product.id === id);
-  })
+export const productState = atomFamily(
+  (id: string | number) =>
+    atom(async (get) => {
+      const products = await get(productsState);
+      return products.find(
+        (product) => String(product.id) === String(id),
+      );
+    }),
 );
 
 export const cartState = atom<Cart>([]);
 
-export const selectedCartItemIdsState = atom<number[]>([]);
+export const selectedCartItemIdsState = atom<(string | number)[]>([]);
 
 export const cartTotalState = atom((get) => {
   const items = get(cartState);
@@ -183,7 +319,7 @@ export const searchResultState = atom(async (get) => {
   );
 });
 
-export const productsByCategoryState = atomFamily((id: String) =>
+export const productsByCategoryState = atomFamily((id: string | number) =>
   atom(async (get) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const products = await get(productsState);
@@ -250,15 +386,19 @@ function mapBackendOrderStatus(
   order: BackendOrder,
 ): OrderStatus {
   switch (order.orderStatus) {
+    case "confirmed":
+      return "confirmed";
+
     case "shipping":
       return "shipping";
 
     case "completed":
-    case "cancelled":
       return "completed";
 
+    case "cancelled":
+      return "cancelled";
+
     case "new":
-    case "confirmed":
     default:
       return "pending";
   }
