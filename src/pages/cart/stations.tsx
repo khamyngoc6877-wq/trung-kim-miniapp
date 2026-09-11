@@ -1,116 +1,80 @@
 import { StationSkeleton } from "@/components/skeleton";
-import { selectedStationIndexState, stationsState } from "@/state";
-import type { Station } from "@/types";
-import { getConfig } from "@/utils/template";
-import { useAtomValue, useSetAtom } from "jotai";
+import { stationsState } from "@/state";
+import { useAtomValue } from "jotai";
 import { Suspense } from "react";
-import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/use-translation";
 
-function Station({
-  station,
-  phone,
-  email,
-  onSelect,
-}: {
-  station: Station & { distance?: string };
-  phone?: string;
-  email?: string;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      className="flex w-full items-start space-x-4 rounded-lg bg-section p-4 pr-2 text-left"
-      onClick={onSelect}
-    >
-      <img
-        src={station.image}
-        alt={station.name}
-        className="h-14 w-14 flex-none rounded-lg bg-skeleton object-cover"
-      />
-
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="text-sm font-medium">
-          {station.name}
-        </div>
-
-        <div className="text-xs leading-5 text-inactive">
-          {station.address}
-        </div>
-
-        {phone && (
-          <div className="text-xs text-inactive">
-            Điện thoại: {phone}
-          </div>
-        )}
-
-        {email && (
-          <div className="break-all text-xs text-inactive">
-            Email: {email}
-          </div>
-        )}
-
-        {station.distance && (
-          <div className="text-xs text-primary">
-            {station.distance}
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
-
-function Stations() {
+function CustomerServiceCard() {
   const stations = useAtomValue(stationsState);
-  const setSelectedStation = useSetAtom(
-    selectedStationIndexState,
-  );
-  const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const phone = getConfig(
-    (config) => config.template.phone,
-  );
+  // Giữ nguyên hình đang dùng ở trang "Điểm nhận hàng" cũ.
+  const image = stations?.[0]?.image;
 
-  const email = getConfig(
-    (config) => config.template.email,
-  );
-
-  return stations.map((station, i) => (
-    <Station
-      key={station.id}
-      station={station}
-      phone={phone}
-      email={email}
-      onSelect={() => {
-        setSelectedStation(i);
-        toast.success(
-          t("common", "stationChanged"),
-        );
-        navigate(-1);
-      }}
-    />
-  ));
-}
-
-function StationsPage() {
   return (
-    <div className="flex flex-col space-y-2 p-4">
-      <Suspense
-        fallback={
-          <>
-            <StationSkeleton />
-            <StationSkeleton />
-            <StationSkeleton />
-            <StationSkeleton />
-          </>
-        }
-      >
-        <Stations />
-      </Suspense>
+    <div className="rounded-xl bg-section p-4 shadow-sm">
+      <div className="flex items-start gap-4">
+        {image && (
+          <img
+            src={image}
+            alt={t("customerService", "companyName")}
+            className="h-24 w-24 flex-none rounded-lg bg-skeleton object-contain"
+          />
+        )}
+
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-bold leading-6">
+            {t("customerService", "companyName")}
+          </h2>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3 text-sm leading-6">
+        <div>
+          <span className="font-medium">
+            {t("customerService", "taxCode")}:
+          </span>{" "}
+          <span>1102160854</span>
+        </div>
+
+        <div>
+          <span className="font-medium">
+            {t("customerService", "address")}:
+          </span>{" "}
+          <span>{t("customerService", "addressValue")}</span>
+        </div>
+
+        <div>
+          <span className="font-medium">
+            {t("customerService", "phone")}:
+          </span>{" "}
+          <a href="tel:0358518816" className="text-primary">
+            0358518816
+          </a>
+        </div>
+
+        <div>
+          <span className="font-medium">
+            {t("customerService", "email")}:
+          </span>{" "}
+          <a
+            href="mailto:trungkim160854@gmail.com"
+            className="break-all text-primary"
+          >
+            trungkim160854@gmail.com
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default StationsPage;
+export default function StationsPage() {
+  return (
+    <div className="p-4">
+      <Suspense fallback={<StationSkeleton />}>
+        <CustomerServiceCard />
+      </Suspense>
+    </div>
+  );
+}

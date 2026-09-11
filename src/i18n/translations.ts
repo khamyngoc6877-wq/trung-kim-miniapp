@@ -1,8 +1,9 @@
 export const translations = {
   vi: {
     navigation: { home: "Trang chủ", categories: "Danh mục", orders: "Đơn hàng", cart: "Giỏ hàng" },
-    header: { searchPlaceholder: "Bạn muốn mua gì...", categories: "Danh mục", orders: "Đơn hàng", orderDetail: "Thông tin đơn hàng", cart: "Giỏ hàng", paymentResult: "Kết quả thanh toán", shippingAddress: "Địa chỉ nhận hàng", stations: "Điểm nhận hàng", profileEditor: "Thông tin tài khoản", search: "Tìm kiếm", back: "Quay lại", shopLogo: "Logo cửa hàng", avatar: "Ảnh đại diện" },
+    header: { searchPlaceholder: "Bạn muốn mua gì...", categories: "Danh mục", orders: "Đơn hàng", orderDetail: "Thông tin đơn hàng", cart: "Giỏ hàng", paymentResult: "Kết quả thanh toán", shippingAddress: "Địa chỉ nhận hàng", stations: "Chăm sóc khách hàng", profileEditor: "Thông tin tài khoản", search: "Tìm kiếm", back: "Quay lại", shopLogo: "Logo cửa hàng", avatar: "Ảnh đại diện" },
     common: { choose: "Chọn", change: "Thay đổi", delete: "Xoá", more: "Xem thêm", save: "Lưu thay đổi", note: "Ghi chú", voucher: "Voucher", receiveTime: "Thời gian nhận", receiveTimeValue: "Từ 16h, 20/1/2025", stationChanged: "Đã thay đổi điểm nhận hàng", language: "Chọn ngôn ngữ", sellerNote: "Lưu ý cho người bán..." },
+    customerService: { companyName: "CÔNG TY TNHH THƯƠNG MẠI QUỐC TẾ TRUNG KIM", taxCode: "MST", address: "Địa chỉ", addressValue: "Thửa đất số 2498, tờ bản đồ số 5, Ấp Bình Tả 1, xã Đức Hòa, tỉnh Tây Ninh", phone: "Điện thoại", email: "Email" },
     empty: { search: "Không có sản phẩm bạn tìm kiếm", category: "Không có sản phẩm trong danh mục này", order: "Hiện tại bạn chưa có đơn hàng nào", cart: "Không có sản phẩm trong giỏ hàng" },
     home: { flashSale: "Giá tốt hôm nay" },
     search: { results: "Kết quả", recommended: "Gợi ý sản phẩm" },
@@ -18,8 +19,9 @@ export const translations = {
   },
   zh: {
     navigation: { home: "首页", categories: "分类", orders: "订单", cart: "购物车" },
-    header: { searchPlaceholder: "您想购买什么？", categories: "分类", orders: "订单", orderDetail: "订单详情", cart: "购物车", paymentResult: "付款结果", shippingAddress: "收货地址", stations: "取货点", profileEditor: "账户信息", search: "搜索", back: "返回", shopLogo: "商店标志", avatar: "头像" },
+    header: { searchPlaceholder: "您想购买什么？", categories: "分类", orders: "订单", orderDetail: "订单详情", cart: "购物车", paymentResult: "付款结果", shippingAddress: "收货地址", stations: "客户服务", profileEditor: "账户信息", search: "搜索", back: "返回", shopLogo: "商店标志", avatar: "头像" },
     common: { choose: "选择", change: "更改", delete: "删除", more: "查看更多", save: "保存更改", note: "备注", voucher: "优惠券", receiveTime: "收货时间", receiveTimeValue: "2025年1月20日16点后", stationChanged: "取货点已更改", language: "选择语言", sellerNote: "给卖家的留言..." },
+    customerService: { companyName: "TRUNG KIM 国际贸易有限责任公司", taxCode: "税号", address: "地址", addressValue: "越南西宁省德和社平打1邑，第5号地图，第2498号地块", phone: "电话", email: "邮箱" },
     empty: { search: "没有找到您搜索的商品", category: "该分类中暂无商品", order: "您目前还没有订单", cart: "购物车中没有商品" },
     home: { flashSale: "今日特价" },
     search: { results: "搜索结果", recommended: "推荐商品" },
@@ -35,8 +37,9 @@ export const translations = {
   },
   en: {
     navigation: { home: "Home", categories: "Categories", orders: "Orders", cart: "Cart" },
-    header: { searchPlaceholder: "What are you looking for?", categories: "Categories", orders: "Orders", orderDetail: "Order details", cart: "Cart", paymentResult: "Payment result", shippingAddress: "Shipping address", stations: "Pickup locations", profileEditor: "Account information", search: "Search", back: "Back", shopLogo: "Store logo", avatar: "Avatar" },
+    header: { searchPlaceholder: "What are you looking for?", categories: "Categories", orders: "Orders", orderDetail: "Order details", cart: "Cart", paymentResult: "Payment result", shippingAddress: "Shipping address", stations: "Customer service", profileEditor: "Account information", search: "Search", back: "Back", shopLogo: "Store logo", avatar: "Avatar" },
     common: { choose: "Choose", change: "Change", delete: "Delete", more: "View more", save: "Save changes", note: "Note", voucher: "Voucher", receiveTime: "Receiving time", receiveTimeValue: "From 4:00 PM, Jan 20, 2025", stationChanged: "Pickup location changed", language: "Choose language", sellerNote: "Message for the seller..." },
+    customerService: { companyName: "TRUNG KIM INTERNATIONAL TRADING COMPANY LIMITED", taxCode: "Tax code", address: "Address", addressValue: "Land plot No. 2498, Map sheet No. 5, Binh Ta 1 Hamlet, Duc Hoa Commune, Tay Ninh Province, Vietnam", phone: "Phone", email: "Email" },
     empty: { search: "No matching products found", category: "There are no products in this category", order: "You do not have any orders yet", cart: "There are no products in your cart" },
     home: { flashSale: "Today's best deals" },
     search: { results: "Results", recommended: "Recommended products" },
