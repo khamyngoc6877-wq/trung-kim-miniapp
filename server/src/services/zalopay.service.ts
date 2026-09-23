@@ -48,7 +48,13 @@ export async function createZaloPayOrder(order: StoreOrder): Promise<ZaloPayCrea
   if (order.paymentMethod !== "zalopay") throw new Error("Đơn hàng không sử dụng ZaloPay");
 
   const appTime = Date.now();
-  const appTransId = `${vietnamDatePrefix()}_${safeOrderSuffix(order.id)}`.slice(0, 40);
+
+  // Mỗi lần tạo giao dịch ZaloPay phải có app_trans_id duy nhất.
+  // Thêm thời gian + chuỗi ngẫu nhiên để có thể thanh toán lại cùng một đơn.
+  const retryToken = `${appTime.toString(36)}${crypto.randomBytes(3).toString("hex")}`;
+  const orderSuffix = safeOrderSuffix(order.id).slice(-16);
+  const appTransId = `${vietnamDatePrefix()}_${orderSuffix}_${retryToken}`.slice(0, 40);
+
   const appUser = String(order.memberPhone || order.memberId || "trung-kim-customer").slice(0, 50);
   const amount = Math.round(Number(order.totalAmount));
   if (!Number.isInteger(amount) || amount <= 0) throw new Error("Số tiền ZaloPay không hợp lệ");
