@@ -74,6 +74,18 @@ async function createMerchantOrder(input: CheckoutInput): Promise<MerchantOrder>
 export function useCheckout() {
   return async (input: CheckoutInput) => {
     const order = await createMerchantOrder(input);
+
+    // ZaloPay Merchant Sandbox:
+    // chỉ tạo đơn hàng nội bộ tại đây. pay.tsx sẽ dùng orderId thật
+    // để gọi /api/payments/zalopay/create và mở order_url.
+    if (input.paymentMethod === "zalopay") {
+      return {
+        order,
+        checkoutOrderId: undefined,
+      };
+    }
+
+    // COD giữ nguyên luồng Checkout SDK hiện tại.
     const checkout = await createCheckoutPayment(
       order.orderId,
       input.paymentMethod,

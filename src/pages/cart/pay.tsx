@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import toast from "react-hot-toast";
 import { Button, Radio, Sheet } from "zmp-ui";
+import { openWebview } from "zmp-sdk/apis";
+import { useNavigate } from "react-router-dom";
+import { savePendingPayment } from "@/services/payment.service";
 import { useCheckout } from "@/hooks/use-checkout";
 import { useTranslation } from "@/hooks/use-translation";
 import { cartState, cartTotalState } from "@/state";
@@ -21,6 +24,9 @@ import {
 const ZALOPAY_ENABLED =
   String(import.meta.env.VITE_ENABLE_ZALOPAY ?? "false") === "true";
 
+const PAYMENT_API_URL =
+  "https://trung-kim-backend.onrender.com/api/payments";
+
 export default function Pay() {
   const cart = useAtomValue(cartState);
   const { totalAmount: subtotal } = useAtomValue(cartTotalState);
@@ -28,6 +34,7 @@ export default function Pay() {
   const [deliveryMode, setDeliveryMode] = useAtom(deliveryModeState);
 
   const checkout = useCheckout();
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
   const [paying, setPaying] = useState(false);
@@ -146,10 +153,74 @@ export default function Pay() {
 
       console.log("Checkout result:", result);
 
+      if (paymentMethod === "zalopay") {
+        const merchantOrderId = String(result.order.orderId ?? "").trim();
+
+        if (!merchantOrderId) {
+          throw new Error("Không nhận được mã đơn hàng để tạo thanh toán ZaloPay");
+        }
+
+        const response = await fetch(`${PAYMENT_API_URL}/zalopay/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId: merchantOrderId,
+          }),
+        });
+
+        const data = (await response.json().catch(() => ({}))) as {
+          orderUrl?: string;
+          order_url?: string;
+          message?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Không thể tạo giao dịch ZaloPay Sandbox",
+          );
+        }
+
+        const orderUrl = String(data.orderUrl ?? data.order_url ?? "").trim();
+
+        if (!orderUrl) {
+          throw new Error("ZaloPay không trả về đường dẫn thanh toán");
+        }
+
+        setShowPaymentSheet(false);
+
+        savePendingPayment({
+          merchantOrderId,
+          paymentMethod: "zalopay",
+          createdAt: Date.now(),
+        });
+
+        // Mở ZaloPay trước, đồng thời chuẩn bị sẵn trang kết quả ở phía dưới WebView.
+        const webviewPromise = openWebview({
+          url: orderUrl,
+        });
+
+        navigate(
+          `/payment-result?merchantOrderId=${encodeURIComponent(
+            merchantOrderId,
+          )}&status=pending`,
+          { replace: true },
+        );
+
+        await webviewPromise;
+
+        console.log("ZALOPAY_SANDBOX_OPENED:", {
+          merchantOrderId,
+          orderUrl,
+        });
+
+        return;
+      }
+
       /**
-       * Không tự đánh dấu COD thành công tại đây. Payment.createOrder() chỉ
-       * tạo/mở Checkout. Kết quả cuối cùng phải đi qua PaymentDone ->
-       * CheckoutSDK.checkTransaction() để Zalo ghi nhận đúng luồng Checkout.
+       * COD tiếp tục dùng luồng Checkout SDK hiện tại.
+       * Kết quả cuối cùng đi qua PaymentDone -> CheckoutSDK.checkTransaction().
        */
       setShowPaymentSheet(false);
 
