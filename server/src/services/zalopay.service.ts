@@ -80,7 +80,7 @@ export async function createZaloPayOrder(order: StoreOrder): Promise<ZaloPayCrea
     app_trans_id: appTransId,
     app_time: appTime,
     amount,
-    description: `Thanh toan don ${order.code}`.slice(0, 256),
+    description: `Thanh toán đơn hàng #${order.code}`.slice(0, 256),
     callback_url: callbackUrl,
     item,
     embed_data: embedData,
