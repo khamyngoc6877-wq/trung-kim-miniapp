@@ -45,11 +45,15 @@ type BackendProduct = {
   id: string | number;
   sku?: string | null;
   name: string;
+  nameZh?: string | null;
+  nameEn?: string | null;
   category?: string | number | null;
   price?: number | string | null;
   compareAtPrice?: number | string | null;
   stock?: number | string | null;
   description?: string | null;
+  descriptionZh?: string | null;
+  descriptionEn?: string | null;
   specifications?: unknown;
   images?: string[];
   variants?: BackendProductVariant[];
@@ -87,6 +91,8 @@ function mapBackendProduct(
     id: product.id,
     sku: String(product.sku ?? ""),
     name: String(product.name ?? ""),
+    nameZh: String(product.nameZh ?? "").trim() || undefined,
+    nameEn: String(product.nameEn ?? "").trim() || undefined,
     price,
     originalPrice:
       compareAtPrice > 0 ? compareAtPrice : undefined,
@@ -95,9 +101,16 @@ function mapBackendProduct(
       Array.isArray(product.images) && product.images.length > 0
         ? String(product.images[0] ?? "")
         : "",
+    images: Array.isArray(product.images)
+      ? product.images
+          .map((image) => String(image ?? "").trim())
+          .filter(Boolean)
+      : [],
     category,
     categoryId: rawCategoryId,
     detail: String(product.description ?? ""),
+    detailZh: String(product.descriptionZh ?? "").trim() || undefined,
+    detailEn: String(product.descriptionEn ?? "").trim() || undefined,
     variants: Array.isArray(product.variants)
       ? product.variants.map((variant) => {
           const variantCompareAtPrice = toNumber(

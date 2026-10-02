@@ -22,11 +22,16 @@ export interface ProductVariant {
 export interface Product {
   id: string | number;
   name: string;
+  nameZh?: string;
+  nameEn?: string;
   price: number;
   originalPrice?: number;
   image: string;
+  images?: string[];
   category: Category;
   detail?: string;
+  detailZh?: string;
+  detailEn?: string;
   sizes?: Size[];
   colors?: Color[];
   variants?: ProductVariant[];

@@ -18,9 +18,10 @@ export default function ProductDetailPage() {
   const refreshProducts = useSetAtom(productsState);
 
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [selectedVariantId, setSelectedVariantId] = useState<string>("");
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Mỗi lần mở/chuyển sang trang chi tiết sản phẩm, lấy lại tồn kho mới nhất
   // từ backend/Supabase. Kết hợp với productsState dùng atomWithRefresh.
@@ -29,6 +30,27 @@ export default function ProductDetailPage() {
   }, [id, refreshProducts]);
 
   const variants = product?.variants ?? [];
+
+  const productImages = useMemo(() => {
+    const rawImages = (product as any)?.images;
+    const images = Array.isArray(rawImages)
+      ? rawImages
+      : typeof rawImages === "string"
+        ? rawImages.split(/\r?\n|,/)
+        : [];
+
+    return Array.from(
+      new Set(
+        [...images, (product as any)?.image]
+          .map((url) => String(url ?? "").trim())
+          .filter(Boolean),
+      ),
+    ) as string[];
+  }, [(product as any)?.images, (product as any)?.image]);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [product?.id]);
 
   useEffect(() => {
     if (!product) {
@@ -82,19 +104,81 @@ export default function ProductDetailPage() {
   const outOfStock =
     selectedVariant !== undefined && Number(selectedVariant.stock) <= 0;
 
+  // Nội dung sản phẩm theo ngôn ngữ đang chọn.
+  // Nếu bản dịch chưa được nhập trong Admin thì tự dùng tiếng Việt.
+  const displayName =
+    language === "zh"
+      ? product.nameZh || product.name
+      : language === "en"
+        ? product.nameEn || product.name
+        : product.name;
+
+  const displayDetail =
+    language === "zh"
+      ? product.detailZh || product.detail
+      : language === "en"
+        ? product.detailEn || product.detail
+        : product.detail;
+
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex-1 overflow-y-auto">
         <div className="w-full p-4 pb-2 space-y-4 bg-section">
-          <img
-            key={product.id}
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover rounded-lg"
-            style={{
-              viewTransitionName: `product-image-${product.id}`,
-            }}
-          />
+          {productImages.length > 0 && (
+            <div>
+              <div
+                className="flex w-full overflow-x-auto snap-x snap-mandatory rounded-lg"
+                onScroll={(event) => {
+                  const element = event.currentTarget;
+                  if (element.clientWidth <= 0) return;
+                  const nextIndex = Math.round(
+                    element.scrollLeft / element.clientWidth,
+                  );
+                  setActiveImageIndex(
+                    Math.max(0, Math.min(nextIndex, productImages.length - 1)),
+                  );
+                }}
+                style={{
+                  scrollbarWidth: "none",
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
+                {productImages.map((imageUrl, index) => (
+                  <div
+                    key={`${product.id}-${imageUrl}-${index}`}
+                    className="w-full flex-none snap-center"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`${displayName} ${index + 1}`}
+                      className="w-full aspect-square object-contain rounded-lg bg-white"
+                      style={
+                        index === 0
+                          ? { viewTransitionName: `product-image-${product.id}` }
+                          : undefined
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {productImages.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 pt-2">
+                  {productImages.map((_, index) => (
+                    <span
+                      key={index}
+                      className={[
+                        "block rounded-full transition-all",
+                        index === activeImageIndex
+                          ? "w-4 h-1.5 bg-primary"
+                          : "w-1.5 h-1.5 bg-gray-300",
+                      ].join(" ")}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <div className="text-xl font-bold text-primary">
@@ -119,7 +203,7 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-            <div className="text-sm mt-1">{product.name}</div>
+            <div className="text-sm mt-1">{displayName}</div>
           </div>
 
           {variants.length > 0 && (
@@ -169,12 +253,12 @@ export default function ProductDetailPage() {
           <ShareButton product={product} />
         </div>
 
-        {product.detail && (
+        {displayDetail && (
           <>
             <div className="bg-background h-2 w-full"></div>
             <Section title={t("product", "description")}>
               <div className="text-sm whitespace-pre-wrap text-subtitle p-4 pt-2">
-                {product.detail}
+                {displayDetail}
               </div>
             </Section>
           </>

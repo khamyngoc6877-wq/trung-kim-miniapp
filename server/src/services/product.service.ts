@@ -3,9 +3,9 @@ import { pool } from "../lib/db.js";
 import type { Product, ProductInput, ProductVariant } from "../types/product.js";
 
 type ProductRow = {
-  id: string; sku: string; name: string; name_zh: string | null; category: string;
+  id: string; sku: string; name: string; name_zh: string | null; name_en: string | null; category: string;
   brand: string | null; price: string | number; compare_at_price: string | number | null;
-  stock: number; description: string | null; specifications: unknown; images: unknown;
+  stock: number; description: string | null; description_zh: string | null; description_en: string | null; specifications: unknown; images: unknown;
   status: "active" | "hidden"; created_at: Date | string; updated_at: Date | string;
 };
 type VariantRow = {
@@ -36,12 +36,15 @@ function mapProduct(row: ProductRow, variants: VariantRow[]): Product {
     sku: row.sku,
     name: row.name,
     nameZh: row.name_zh ?? undefined,
+    nameEn: row.name_en ?? undefined,
     category: row.category,
     brand: row.brand ?? undefined,
     price: n(row.price),
     compareAtPrice: optNum(row.compare_at_price),
     stock: n(row.stock),
     description: row.description ?? undefined,
+    descriptionZh: row.description_zh ?? undefined,
+    descriptionEn: row.description_en ?? undefined,
     specifications: row.specifications as Product["specifications"],
     images,
     variants: variants.map((v) => ({
@@ -108,20 +111,23 @@ export async function createProduct(input: ProductInput): Promise<Product> {
   const id = crypto.randomUUID();
   const client = await pool.connect();
   try {
-    await client.query("begin");
     await client.query(
       `insert into public.products
-       (id,sku,name,name_zh,category,brand,price,compare_at_price,stock,description,
-        specifications,images,status,created_at,updated_at)
-       values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,now(),now())`,
-      [id, String(input.sku ?? "").trim(), String(input.name ?? "").trim(),
-       input.nameZh ? String(input.nameZh).trim() : null, String(input.category ?? "").trim(),
-       input.brand ? String(input.brand).trim() : null, n(input.price),
-       input.compareAtPrice !== undefined ? n(input.compareAtPrice) : null, n(input.stock),
-       input.description ?? null,
-       input.specifications === undefined ? null : JSON.stringify(input.specifications),
-       JSON.stringify(Array.isArray(input.images) ? input.images.map(String).filter(Boolean) : []),
-       input.status === "hidden" ? "hidden" : "active"]);
+       (id,sku,name,name_zh,name_en,category,brand,price,compare_at_price,stock,
+        description,description_zh,description_en,specifications,images,status,created_at,updated_at)
+       values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15::jsonb,$16,now(),now())`,
+      [
+        id, String(input.sku ?? "").trim(), String(input.name ?? "").trim(),
+        input.nameZh ? String(input.nameZh).trim() : null,
+        input.nameEn ? String(input.nameEn).trim() : null,
+        String(input.category ?? "").trim(),
+        input.brand ? String(input.brand).trim() : null, n(input.price),
+        input.compareAtPrice !== undefined ? n(input.compareAtPrice) : null, n(input.stock),
+        input.description ?? null, input.descriptionZh ?? null, input.descriptionEn ?? null,
+        input.specifications === undefined ? null : JSON.stringify(input.specifications),
+        JSON.stringify(Array.isArray(input.images) ? input.images.map(String).filter(Boolean) : []),
+        input.status === "hidden" ? "hidden" : "active"
+      ]);
     await replaceVariants(client, id, Array.isArray(input.variants) ? input.variants : []);
     await client.query("commit");
   } catch (e) { await client.query("rollback"); throw e; } finally { client.release(); }
@@ -134,20 +140,24 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
   const next = { ...current, ...input };
   const client = await pool.connect();
   try {
-    await client.query("begin");
     await client.query(
       `update public.products set
-       sku=$2,name=$3,name_zh=$4,category=$5,brand=$6,price=$7,compare_at_price=$8,
-       stock=$9,description=$10,specifications=$11::jsonb,images=$12::jsonb,status=$13,updated_at=now()
+       sku=$2,name=$3,name_zh=$4,name_en=$5,category=$6,brand=$7,price=$8,compare_at_price=$9,
+       stock=$10,description=$11,description_zh=$12,description_en=$13,
+       specifications=$14::jsonb,images=$15::jsonb,status=$16,updated_at=now()
        where id=$1`,
-      [current.id, String(next.sku ?? "").trim(), String(next.name ?? "").trim(),
-       next.nameZh ? String(next.nameZh).trim() : null, String(next.category ?? "").trim(),
-       next.brand ? String(next.brand).trim() : null, n(next.price),
-       next.compareAtPrice !== undefined ? n(next.compareAtPrice) : null, n(next.stock),
-       next.description ?? null,
-       next.specifications === undefined ? null : JSON.stringify(next.specifications),
-       JSON.stringify(Array.isArray(next.images) ? next.images.map(String).filter(Boolean) : []),
-       next.status === "hidden" ? "hidden" : "active"]);
+      [
+        current.id, String(next.sku ?? "").trim(), String(next.name ?? "").trim(),
+        next.nameZh ? String(next.nameZh).trim() : null,
+        next.nameEn ? String(next.nameEn).trim() : null,
+        String(next.category ?? "").trim(),
+        next.brand ? String(next.brand).trim() : null, n(next.price),
+        next.compareAtPrice !== undefined ? n(next.compareAtPrice) : null, n(next.stock),
+        next.description ?? null, next.descriptionZh ?? null, next.descriptionEn ?? null,
+        next.specifications === undefined ? null : JSON.stringify(next.specifications),
+        JSON.stringify(Array.isArray(next.images) ? next.images.map(String).filter(Boolean) : []),
+        next.status === "hidden" ? "hidden" : "active"
+      ]);
     if (input.variants !== undefined) await replaceVariants(client, current.id, input.variants);
     await client.query("commit");
   } catch (e) { await client.query("rollback"); throw e; } finally { client.release(); }
