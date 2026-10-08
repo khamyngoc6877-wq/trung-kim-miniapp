@@ -9,6 +9,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import voucherRoutes from "./routes/voucher.routes.js";
 import memberRoutes from "./routes/member.routes.js";
+import memberAdminRoutes from "./routes/member-admin.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,8 +18,7 @@ const app = express();
 
 app.disable("x-powered-by");
 
-const configuredOrigin =
-  process.env.MINI_APP_ORIGIN?.trim();
+const configuredOrigin = process.env.MINI_APP_ORIGIN?.trim();
 
 const allowedOrigins = [
   configuredOrigin,
@@ -43,24 +43,10 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(
-        new Error(`CORS blocked origin: ${origin}`)
-      );
+      return callback(new Error(`CORS blocked origin: ${origin}`));
     },
-
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
-
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -78,8 +64,7 @@ app.get("/health", (_req, res) =>
   res.status(200).json({
     status: "ok",
     environment:
-      process.env.PAYMENT_ENVIRONMENT ===
-      "production"
+      process.env.PAYMENT_ENVIRONMENT === "production"
         ? "production"
         : "sandbox",
   }),
@@ -95,49 +80,42 @@ app.use("/api/orders", orderRoutes);
    PAYMENT API
 ========================= */
 
-app.use(
-  "/api/payments",
-  paymentRoutes,
-);
+app.use("/api/payments", paymentRoutes);
 
 /* =========================
    PRODUCT API
 ========================= */
 
-app.use(
-  "/api/products",
-  productRoutes,
-);
+app.use("/api/products", productRoutes);
 
 /* =========================
    VOUCHER API
 ========================= */
 
-app.use(
-  "/api/vouchers",
-  voucherRoutes,
-);
+app.use("/api/vouchers", voucherRoutes);
+
+/* =========================
+   MEMBER API
+========================= */
 
 app.use("/api/members", memberRoutes);
 
 /* =========================
-   ADMIN PRODUCT MANAGEMENT
+   ADMIN MEMBER API
 ========================= */
 
-const adminDirectory =
-  path.resolve(
-    __dirname,
-    "../public/admin",
-  );
-
-app.use(
-  "/admin",
-  express.static(adminDirectory),
-);
+app.use("/api/admin", memberAdminRoutes);
 
 /* =========================
-   404
-   PHẢI ĐỂ CUỐI CÙNG
+   ADMIN STATIC PAGES
+========================= */
+
+const adminDirectory = path.resolve(__dirname, "../public/admin");
+
+app.use("/admin", express.static(adminDirectory));
+
+/* =========================
+   404 - PHẢI ĐỂ CUỐI CÙNG
 ========================= */
 
 app.use((_req, res) =>
@@ -150,15 +128,8 @@ app.use((_req, res) =>
    START SERVER
 ========================= */
 
-const port =
-  Number(process.env.PORT) ||
-  3000;
+const port = Number(process.env.PORT) || 3000;
 
-app.listen(
-  port,
-  "0.0.0.0",
-  () =>
-    console.log(
-      `Payment server running on port ${port}`,
-    ),
+app.listen(port, "0.0.0.0", () =>
+  console.log(`Payment server running on port ${port}`),
 );
